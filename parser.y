@@ -1,191 +1,166 @@
 %{
-#include <stdint.h>
-#include <stdio.h>
-
-int prepare_func(char *str, int count);
+#include "ast.h"
+#include "global.h"
 %}
 
 %output "parser.c"
 %defines "parser.h"
 
-%union {
-    int16_t val;
-//    struct *func f;
-//    struct *var v;
-    char *str;
-    int count;
-    struct *ast ast;
-}
+%token T_TURTLE
+%token T_VAR
+%token T_FUN
+%token T_UP
+%token T_DOWN
+%token T_MOVETO
+%token T_READ
+%token T_IF
+%token T_ELSE
+%token T_WHILE
+%token T_RETURN
+%token T_MINUS
+%token T_PLUS
+%token T_MULTIPLY
+%token T_EQ
+%token T_LT
+%token T_IDENT
+%token T_INT_LITERAL
 
-%token TURTLE
-%token VAR
-%token FUN
-%token UP
-%token DOWN
-%token MOVETO
-%token READ
-%token IF
-%token ELSE
-%token WHILE
-%token RETURN
-
-%token EQ
-%token LT
-%token GT
-%token LE
-%token GE
-
-%token <str> IDENT
-%token <val> INTEGER
-
-%type <ast> var_decls_list
-%type <ast> var_decls
-%type <ast> var_decl
-%type <ast> func_decls
-%type <ast> func_decl
-%type <ast> parameters
-%type <ast> idents_list
-%type <ast> idents
-%type <ast> compound_statement
-%type <ast> statement_list
-%type <ast> statement
-%type <ast> arguments
-%type <ast> expression_list
-%type <ast> expression
-%type <ast> comparison
-
-
-%nonassoc EQ
-%left '-' '+'
-%left '*'
-%left NEG
+%nonassoc T_EQ LT
+%left T_MINUS T_PLUS
+%left T_MULTIPLY
+%left T_NEG
 
 %%
 
 program
-    : TURTLE IDENT BEGIN_GLOBAL_VAR_DECLS var_decls_list END_GLOBAL_VAR_DECLS
-    func_decls compound_statement
-        {}
+    : T_TURTLE T_IDENT var_decls func_decls compound_statement
+        { $$ = ast_new_node4(N_PROG, N_PROG, $2, $3, $4, $5); }
     ;
-
-BEGIN_GLOBAL_VAR_DECLS
-    : /* empty */   { is_global = 1; }
-    ;
-
-END_GLOBAL_VAR_DECLS
-    : /* empty */   { is_global = 0; }
-    ;
-
-var_decls_list
-    : /* empty */   { $$ = NULL; }
-    | var_decls     { $$ = $1; }
 
 var_decls
-    : var_decls var_decl    { $$ = ast_insert($1, $2); }
-    | var_decl              { $$ = $1; }
+    : /* empty */           { $$ = NULL; }
+    | var_decls var_decl    {
+                                if ($1 == NULL) {
+                                    $$ = $2;
+                                } else {
+                                    $$ = ast_insert($1, $2);
+                                }
+                            }
     ;
 
 var_decl
-    : VAR IDENT                 {}
-    | VAR IDENT '=' expression  {}
+    : T_VAR T_IDENT
+        {
+            struct ast_node *a = ast_new_int_literal_node(0);
+            $$ = ast_new_node2(N_VAR_DEF, 0, $2, a);
+        }
+    | T_VAR T_IDENT '=' expression
+        {
+            $$ = ast_new_node2(N_VAR_DEF, 0, $2, $4);
+        }
     ;
 
 func_decls
     : /* empty */           { $$ = NULL; }
-    | func_decls func_decl  { $$ = ast_insert($1, $2); }
+    | func_decls func_decl  {
+                                if ($1 == NULL) {
+                                    $$ = $2;
+                                } else {
+                                    $$ = ast_insert($1, $2);
+                                }
+                            }
     ;
 
 func_decl
-    : FUN IDENT '(' parameters ')' var_decls_list compound_statement
-                                {
-                                    in_func = true;
-                                }
-    ;
-
-parameters
-    : idents_list            { $$ = $1; }
+    : T_FUN T_IDENT '(' idents_list ')' var_decls compound_statement
+        { $$ = ast_new_node4(N_FUNC_DEF, 0, $2, $4, $6, $7); }
     ;
 
 idents_list
-    : /* empty */       { $$ = NULL; }
-    | idents            { $$ = $1; }
+    : /* empty */   { $$ = NULL; }
+    | idents        { $$ = $1; }
     ;
 
 idents
-    : IDENT             { }
-    | idents ',' IDENT  { ast_insert() }
+    : T_IDENT
+        { /*TODO */}
+    | idents ',' T_IDENT  { $$ = ast_insert($1, $3); }
     ;
 
 compound_statement
-    : '{' statement_list '}'    { $$ = $2 }
+    : '{' statement_list '}'    { $$ = $2; }
     ;
 
 statement_list
     : /* empty */               { $$ = NULL; }
-    | statement_list statement  { }
+    | statement_list statement  {
+                                    if ($1 == NULL) {
+                                        $$ = $2;
+                                    } else {
+                                        $$ = ast_insert($1, $2);
+                                    }
+                                }
     ;
 
 statement
-    : UP
-        { $$ = ast_new_node(K_STMT, UP, NULL, NULL, NULL, NULL); }
-    | DOWN
-        { $$ = ast_new_node(K_STMT, Down, NULL, NULL, NULL, NULL); }
-    | MOVETO '(' expression ',' expression ')'
-        { $$ = ast_new_node(K_STMT, MOVETO, $3, $5, NULL, NULL); }
-    | READ '(' IDENT ')'
-        { $$ = ast_new_node(K_STMT, READ, $3, NULL, NULL, NULL); }
-    | IDENT '=' expression
-        { $$ = ast_new_node(K_STMT, Assign, $3, NULL, NULL, NULL); }
-    | IF '(' comparison ')' compound_statement
-        { $$ = ast_new_node(K_STMT, IFT, $3, $5, NULL, NULL); }
-    | IF '(' comparison ')' compound_statement ELSE compound_statement
-        { $$ = ast_new_node(K_STMT, IFTE, $3, $5, $7, NULL); }
-    | WHILE '(' comparison ')' compound_statement
-        { $$ = ast_new_node(K_STMT, WHILE, $3, $5, NULL, NULL); }
-    | RETURN expression
-        { $$ = ast_new_node(K_STMT, RETURN, $2, NULL, NULL, NULL); }
-    | IDENT '(' arguments ')'
-        { $$ = ast_new_node(K_STMT, FUNC_CALL_STMT, $1, $3, NULL, NULL); }
+    : T_UP
+        { $$ = ast_new_node0(N_STMT, STMT_UP); }
+    | T_DOWN
+        { $$ = ast_new_node0(N_STMT, STMT_DOWN); }
+    | T_MOVETO '(' expression ',' expression ')'
+        { $$ = ast_new_node2(N_STMT, STMT_MOVETO, $3, $5); }
+    | T_READ '(' T_IDENT ')'
+        { $$ = ast_new_node1(N_STMT, STMT_READ, $3); }
+    | T_IDENT '=' expression
+        { $$ = ast_new_node2(N_STMT, STMT_ASSIGN, $1, $3); }
+    | T_IF '(' comparison ')' compound_statement
+        { $$ = ast_new_node2(N_STMT, STMT_IFT, $3, $5); }
+    | T_IF '(' comparison ')' compound_statement T_ELSE compound_statement
+        { $$ = ast_new_node3(N_STMT, STMT_IFTE, $3, $5, $7); }
+    | T_WHILE '(' comparison ')' compound_statement
+        { $$ = ast_new_node2(N_STMT, STMT_WHILE, $3, $5); }
+    | T_RETURN expression
+        { $$ = ast_new_node1(N_STMT, STMT_RET, $2); }
+    | T_IDENT '(' expression_list ')'
+        { $$ = ast_new_node2(N_STMT, STMT_FUNC_CALL, $1, $3); }
     | '{' expression_list '}'
         { $$ = $2; }
     ;
 
-arguments
-    : idents_list    { $$ = $1; }
+expression_list
+    : /* empty */   { $$ = NULL; }
+    | expressions   { $$ = $1; }
     ;
 
-expression_list
-    : /* empty */                       { $$ = NULL; }
-    | expression                        { }
-    | expression_list ',' expression    { }
+expressions
+    : expression                    { $$ = $1; }
+    | expressions ',' expression    { $$ = ast_insert($1, $3); }
     ;
 
 expression
-    : expression '+' expression
-        { $$ = ast_new_node(2, K_EXPR, PLUS, $1, $3, NULL, NULL); }
-    | expression '-' expression
-        { $$ = ast_new_node(2, K_EXPR, MINUS, $1, $3, NULL, NULL); }
-    | expression '*' expression
-        { $$ = ast_new_node(2, K_EXPR, MULTIPLY, $1, $3, NULL, NULL); }
-    | '-' expression %prec NEG
-        { $$ = ast_new_node(1, K_EXPR, NEG, $2, NULL, NULL, NULL); }
-    | IDENT
-        { $$ = ast_new_node(2, K_EXPR, MULTIPLY, NULL, NULL, NULL, NULL,
-        (void *) $1; }
-    | IDENT '(' arguments ')'
-        { $$ = ast_new_node(2, K_EXPR, FUNC_CALL_EXPR, $3, NULL, NULL, NULL,
-        (void *) $1; }
+    : expression T_PLUS expression
+        { $$ = ast_new_arith_node(EXPR_OP_PLUS, $1, $3); }
+    | expression T_MINUS expression
+        { $$ = ast_new_arith_node(EXPR_OP_MINUS, $1, $3); }
+    | expression T_MULTIPLY expression
+        { $$ = ast_new_arith_node(EXPR_OP_MULTIPLY, $1, $3); }
+    | T_MINUS expression %prec T_NEG
+        { $$ = ast_new_arith_node(EXPR_OP_NEG, $2, NULL); }
+    | T_IDENT
+        { $$ = ast_new_node(N_EXPR, EXPR_IDENT, $1, NULL, NULL, NULL); }
+    | T_IDENT '(' expression_list ')'
+        { $$ = ast_new_node(N_EXPR, EXPR_FUNC_CALL, $1, $3, NULL, NULL); }
     | '(' expression ')'
         { $$ = $2; }
-    | INTEGER
-        { $$ = ast_new_node(1, K_EXPR, FUNC_CALL_EXPR, $1, NULL, NULL, NULL); }
+    | T_INT_LITERAL
+        { $$ = $1; }
     ;
 
 comparison
-    : expression EQ expression
-        { $$ = ast_new_node(2, K_COMP, EQ, $1, $3, NULL, NULL); }
-    | expression GT expression
-        { $$ = ast_new_node(2, K_COMP, EQ, $1, $3, NULL, NULL); }
+    : expression T_EQ expression
+        { $$ = ast_new_comp_node(COMP_EQ, $1, $3); }
+    | expression LT expression
+        { $$ = ast_new_comp_node(COMP_LT, $1, $3); }
     ;
 %%
 
@@ -199,14 +174,3 @@ yyerror (char *s)  /* Called by yyparse on error */
   printf ("\terror: %s\n", s);
 }
 
-
-void prepare_func(char *str, int count)
-{
-    if (undefined) {
-        // error
-    }
-    if (lookup(str)->count != count) {
-        // error
-    }
-    emit_func(str);
-}

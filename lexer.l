@@ -1,10 +1,7 @@
 %{
+#include "global.h"
+#include "ast.h"
 #include "parser.h"
-
-enum { LINECMT, NEWLINE }
-
-static int in_line_cmt = 0;
-static int proc(int token);
 %}
 
 %option outfile="lexer.c"
@@ -16,31 +13,39 @@ static int proc(int token);
 whitespace  [ \t]
 digit       [0-9]
 ident       [a-zA-Z][a-zA-Z0-9_']*
-line_cmt    \/\/
 
 %%
 
-{whitespace}
-"\n"        { proc(NEWLINE); }
-{line_cmt}  { int r = proc(LINE_CMT);   if (r != COMMENT)  return r; }
-"turtle"    { int r = proc(TURTLE);     if (r != COMMENT) return r; }
-"var"       { int r = proc(VAR);        if (r != COMMENT) return r; }
-"fun"       { int r = proc(FUN);        if (r != COMMENT) return r; }
-"up"        { int r = proc(UP);         if (r != COMMENT) return r; }
-"down"      { int r = proc(DOWN);       if (r != COMMENT) return r; }
-"moveto"    { int r = proc(MOVETO);     if (r != COMMENT) return r; }
-"read"      { int r = proc(READ);       if (r != COMMENT) return r; }
-"if"        { int r = proc(IF);         if (r != COMMENT) return r; }
-"else"      { int r = proc(ELSE);       if (r != COMMENT) return r; }
-"while"     { int r = proc(WHILE);      if (r != COMMENT) return r; }
-"return"    { int r = proc(RETURN);     if (r != COMMENT) return r; }
+{whitespace} /* ignore */
+"\n"        { }
+"turtle"    { return T_TURTLE; }
+"var"       { return T_VAR; }
+"fun"       { return T_FUN; }
+"up"        { return T_UP; }
+"down"      { return T_DOWN; }
+"moveto"    { return T_MOVETO; }
+"read"      { return T_READ; }
+"if"        { return T_IF; }
+"else"      { return T_ELSE; }
+"while"     { return T_WHILE; }
+"return"    { return T_RETURN; }
 
-"=="        { int r = proc(EQ);         if (r != COMMENT) return r; }
-"<"         { int r = proc{LT};         if (r != COMMENT) return r; }
+"=="        { return T_EQ; }
+"<"         { return T_LT; }
+"+"         { return T_PLUS; }
+"-"         { return T_MINUS; }
+"*"         { return T_MULTIPLY; }
 
-{ident}     { int r = proc(IDENT);      if (r != COMMENT) return r; }
-{digit}+    { int r = proc(INTEGER);    if (r != COMMENT) return r; }
-.           { int r = proc(CHAR);       if (r != COMMENT) return r; }
+"//".*      /* ignore comments */
+
+{ident}     { yylval = ast_new_ident_node(yytext); return T_IDENT; }
+{digit}+    {
+                int tmp;
+                sscanf(yytext, "%d", &tmp);
+                yylval = ast_new_int_literal_node(tmp);
+                return T_INT_LITERAL;
+            }
+.           { return yytext[0]; }
 
 %%
 
@@ -50,35 +55,3 @@ int yyerror(const char *msg)
     return 0;
 }
 
-static int proc(int token)
-{
-    if (in_line_cmt && token != NEWLINE) {
-        return COMMENT;
-    }
-
-    switch (token) {
-    case LINE_CMT:
-        in_line_cmt = 1;
-        return COMMENT;
-    case NEWLINE:
-        yyset_lineno(yyget_lineno() + 1);
-        if (in_line_cmt) {
-            in_line_cmt = 0;
-            return COMMENT;
-        }
-    case IDENT:
-        if (prev_sym) {
-            free(prev_sym);
-        }
-        prev_sym = last_sym;
-        last_sym = strdup(yytext);
-        return IDENT;
-    case INTEGER:
-        sscanf(yytext, "%d", &lastval);
-        return INTEGER;
-    case CHAR:
-        return yytext[0];
-    default:
-        return token;
-    }
-}
