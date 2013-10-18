@@ -17,5 +17,9 @@ void S_beginScope(struct hash_table *t);
 
 void S_endScope(struct hash_table *t);
 
+int in_frame(void);
+
+extern struct S_symbol marksym;
+
 #endif /* end of include guard: SYMBOL_H_ */
 

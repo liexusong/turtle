@@ -1,11 +1,14 @@
 %{
 #include "absyn.h"
 #include "global.h"
+#include "semant.h"
+#include "lexer.h"
 #define TODO_NUM 0
 %}
 
 %output "parser.c"
 %defines "parser.h"
+%locations
 
 %union{
     struct A_program *a_program;
@@ -84,6 +87,8 @@ program
     : T_TURTLE T_IDENT var_decls func_decls compound_statement
         {
             $$ = A_Program(S_name($2), $3, $4, $5);
+            sem_trans_prog($$);
+            gen_debug();
         }
     ;
 
@@ -93,7 +98,8 @@ var_decls
     ;
 
 var_decl
-    : T_VAR T_IDENT                 { $$ = A_Vardec(TODO_NUM, $2, 0); }
+    : T_VAR T_IDENT
+        { $$ = A_Vardec(TODO_NUM, $2, A_IntExp(TODO_NUM, 0)); }
     | T_VAR T_IDENT '=' expression  { $$ = A_Vardec(TODO_NUM, $2, $4); }
     ;
 
@@ -194,10 +200,29 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-/* 
-int yyerror (char *s)  Called by yyparse on error 
+void
+yyerror(char *s, ...)
 {
-    printf ("\terror: %s\n", s);
-    return -1;
-}*/
+    va_list ap;
+    va_start(ap, s);
+    if (yylloc.first_line) {
+        fprintf(stderr, "%d.%d-%d.%d: error: ", yylloc.first_line,
+                yylloc.first_column, yylloc.last_line, yylloc.last_column);
+    }
+    vfprintf(stderr, s, ap);
+    fprintf(stderr, "\n");
+}
+
+void
+lyyerror(YYLTYPE t, char *s, ...)
+{
+    va_list ap;
+    va_start(ap, s);
+    if (t.first_line) {
+        fprintf(stderr, "%d.%d-%d.%d: error: ", t.first_line, t.first_column,
+        t.last_line, t.last_column);
+    }
+    vfprintf(stderr, s, ap);
+    fprintf(stderr, "\n");
+}
 

@@ -1,3 +1,7 @@
+#include "ir.h"
+#include "hash.h"
+#include "global.h"
+
 void
 do_translate(struct ast_node *node)
 {
@@ -79,3 +83,13 @@ translate_expression(struct ast_node *node)
     switch (node->stmt_expr_type->expr_type) {
     }
 }
+
+
+int
+gen_Loadi(int v)
+{
+    PushI(v);
+    return virtual_p;
+}
+
+

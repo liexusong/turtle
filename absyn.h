@@ -141,7 +141,7 @@ struct A_program *A_Program(char *program_name, struct A_vardecList *global_var_
 
 //struct A_var *A_Var(A_pos pos, struct S_symbol *sym);
 
-struct A_vardec *A_Vardec(A_pos pos, struct S_symbol *var, struct A_exp *init);
+struct A_vardec *A_Vardec(A_pos pos, struct S_symbol *sym, struct A_exp *init);
 struct A_vardecList *A_VardecList(struct A_vardec *head, struct A_vardecList *tail);
 
 struct A_fundec *A_Fundec(A_pos pos, struct S_symbol *name, struct A_fieldList *params, struct A_vardecList *var, struct A_stmtList *body);

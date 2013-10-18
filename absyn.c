@@ -40,14 +40,15 @@ error:
 */
 
 struct A_vardec *
-A_Vardec(A_pos pos, struct S_symbol *name, struct A_exp *init)
+A_Vardec(A_pos pos, struct S_symbol *sym, struct A_exp *init)
 {
     struct A_vardec *p = malloc(sizeof *p);
     check_mem(p);
 
     p->pos = pos;
-    p->name = name;
+    p->sym = sym;
     p->init = init;
+    log_info("A_Vardec(%s)\n", S_name(sym));
 
     return p;
 

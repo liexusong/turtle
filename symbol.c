@@ -3,6 +3,8 @@
 #include "symbol.h"
 #include "dbg.h"
 
+static int nested_level = 0;
+
 struct S_symbol {
     char *name;
     struct S_symbol *next;
@@ -81,11 +83,12 @@ S_look(struct hash_table *t, struct S_symbol *sym)
     return hash_lookup(t, sym);
 }
 
-static struct S_symbol marksym = {"<mark>", 0};
+struct S_symbol marksym = {"<mark>", NULL};
 
 void S_beginScope(struct hash_table *t)
 {
     S_enter(t, &marksym, NULL);
+    nested_level += 1;
 }
 
 void S_endScope(struct hash_table *t)
@@ -94,4 +97,10 @@ void S_endScope(struct hash_table *t)
     do {
         s = hash_pop(t);
     } while (s != &marksym);
+    nested_level -= 1;
+}
+
+int in_frame(void)
+{
+    return nested_level >= 1;
 }

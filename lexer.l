@@ -2,6 +2,13 @@
 #include "global.h"
 #include "absyn.h"
 #include "parser.h"
+
+int yycolumn = 1;
+
+#define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
+                       yylloc.first_column = yycolumn; \
+                       yylloc.last_column = yycolumn + yyleng - 1; \
+                       yycolumn += yyleng;
 %}
 
 %option outfile="lexer.c"
@@ -12,12 +19,12 @@
 
 whitespace  [ \t]
 digit       [0-9]
-ident       [a-zA-Z][a-zA-Z0-9_']*
+ident       [a-zA-Z][a-zA-Z0-9\_\']*
 
 %%
 
 {whitespace} /* ignore */
-"\n"        { }
+"\n"        { yycolumn  = 1; }
 "turtle"    { return T_TURTLE; }
 "var"       { return T_VAR; }
 "fun"       { return T_FUN; }
@@ -38,15 +45,10 @@ ident       [a-zA-Z][a-zA-Z0-9_']*
 
 "//".*      /* ignore comments */
 
-{ident}     { yylval.sym = S_Symbol(yytext); return T_IDENT; }
+<<EOF>>     { yyterminate(); }
+
+{ident}     { yylval.sym = S_Symbol(strdup(yytext)); log_info("%s", S_name(yylval.sym)); return T_IDENT; }
 {digit}+    { sscanf(yytext, "%d", &(yylval.val)); return T_INT_LITERAL; }
 .           { return yytext[0]; }
 
 %%
-
-int yyerror(const char *msg)
-{
-    fprintf(stderr, "Error: %s\n", msg);
-    return 0;
-}
-

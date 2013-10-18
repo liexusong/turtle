@@ -75,6 +75,9 @@ void *hash_lookup(struct hash_table *t, void *key)
     index = ((unsigned) key) % HASH_TBL_SIZE;
     for (b = t->table[index]; b; b = b->next)
     {
+        if (b->key == &marksym) {
+            return NULL;
+        }
         if (b->key == key) {
             return b->value;
         }
