@@ -7,11 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-#ifndef YYSTYPE
-#undef YYSTYPE
-#endif
-#define YYSTYPE struct ast_node *
+#include "symbol.h"
+#include "dbg.h"
 
 #endif /* end of include guard: GLOBAL_H_ */
 

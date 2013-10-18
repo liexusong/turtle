@@ -1,6 +1,6 @@
 %{
 #include "global.h"
-#include "ast.h"
+#include "absyn.h"
 #include "parser.h"
 %}
 
@@ -38,13 +38,8 @@ ident       [a-zA-Z][a-zA-Z0-9_']*
 
 "//".*      /* ignore comments */
 
-{ident}     { yylval = ast_new_ident_node(yytext); return T_IDENT; }
-{digit}+    {
-                int tmp;
-                sscanf(yytext, "%d", &tmp);
-                yylval = ast_new_int_literal_node(tmp);
-                return T_INT_LITERAL;
-            }
+{ident}     { yylval.sym = S_Symbol(yytext); return T_IDENT; }
+{digit}+    { sscanf(yytext, "%d", &(yylval.val)); return T_INT_LITERAL; }
 .           { return yytext[0]; }
 
 %%

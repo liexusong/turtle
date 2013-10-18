@@ -1,10 +1,35 @@
 %{
-#include "ast.h"
+#include "absyn.h"
 #include "global.h"
+#define TODO_NUM 0
 %}
 
 %output "parser.c"
 %defines "parser.h"
+
+%union{
+    struct A_program *a_program;
+    struct A_VAR *a_var;
+
+    struct A_vardec *a_vardec;
+    struct A_vardecList *a_vardeclist;
+
+    struct A_fundec *a_fundec;
+    struct A_fundecList *a_fundeclist;
+
+    struct A_exp *a_exp;
+    struct A_expList *a_explist;
+
+    struct A_stmt *a_stmt;
+    struct A_stmtList *a_stmtlist;
+
+    struct A_field *a_field;
+    struct A_fieldList *a_fieldlist;
+
+    int val;
+
+    struct S_symbol *sym;
+}
 
 %token T_TURTLE
 %token T_VAR
@@ -22,58 +47,64 @@
 %token T_MULTIPLY
 %token T_EQ
 %token T_LT
-%token T_IDENT
-%token T_INT_LITERAL
+
+%token <sym> T_IDENT
+%token <val> T_INT_LITERAL
+
+%type <a_program> program
+%type <a_vardec> var_decl
+%type <a_vardeclist> var_decls
+
+%type <a_fundec> func_decl
+%type <a_fundeclist> func_decls
+
+%type <a_fieldlist> idents
+%type <a_fieldlist> idents_list
+
+%type <a_stmt> statement
+%type <a_stmtlist> compound_statement
+%type <a_stmtlist> statement_list
+
+
+%type <a_exp> expression
+%type <a_explist> expression_list
+%type <a_explist> expressions
+
+%type <a_exp> comparison
 
 %nonassoc T_EQ LT
 %left T_MINUS T_PLUS
 %left T_MULTIPLY
 %left T_NEG
 
-%%
+%start program
 
+%%
 program
     : T_TURTLE T_IDENT var_decls func_decls compound_statement
-        { $$ = ast_new_node4(N_PROG, N_PROG, $2, $3, $4, $5); }
+        {
+            $$ = A_Program(S_name($2), $3, $4, $5);
+        }
     ;
 
 var_decls
     : /* empty */           { $$ = NULL; }
-    | var_decls var_decl    {
-                                if ($1 == NULL) {
-                                    $$ = $2;
-                                } else {
-                                    $$ = ast_insert($1, $2);
-                                }
-                            }
+    | var_decl var_decls    { $$ = A_VardecList($1, $2); }
     ;
 
 var_decl
-    : T_VAR T_IDENT
-        {
-            struct ast_node *a = ast_new_int_literal_node(0);
-            $$ = ast_new_node2(N_VAR_DEF, 0, $2, a);
-        }
-    | T_VAR T_IDENT '=' expression
-        {
-            $$ = ast_new_node2(N_VAR_DEF, 0, $2, $4);
-        }
+    : T_VAR T_IDENT                 { $$ = A_Vardec(TODO_NUM, $2, 0); }
+    | T_VAR T_IDENT '=' expression  { $$ = A_Vardec(TODO_NUM, $2, $4); }
     ;
 
 func_decls
     : /* empty */           { $$ = NULL; }
-    | func_decls func_decl  {
-                                if ($1 == NULL) {
-                                    $$ = $2;
-                                } else {
-                                    $$ = ast_insert($1, $2);
-                                }
-                            }
+    | func_decl func_decls  { $$ = A_FundecList($1, $2); }
     ;
 
 func_decl
     : T_FUN T_IDENT '(' idents_list ')' var_decls compound_statement
-        { $$ = ast_new_node4(N_FUNC_DEF, 0, $2, $4, $6, $7); }
+        { $$ = A_Fundec(TODO_NUM, $2, $4, $6, $7); }
     ;
 
 idents_list
@@ -82,9 +113,8 @@ idents_list
     ;
 
 idents
-    : T_IDENT
-        { /*TODO */}
-    | idents ',' T_IDENT  { $$ = ast_insert($1, $3); }
+    : T_IDENT               { $$ = A_FieldList(A_Field(TODO_NUM, $1), NULL); }
+    | T_IDENT ',' idents    { $$ = A_FieldList(A_Field(TODO_NUM, $1), $3); }
     ;
 
 compound_statement
@@ -93,38 +123,32 @@ compound_statement
 
 statement_list
     : /* empty */               { $$ = NULL; }
-    | statement_list statement  {
-                                    if ($1 == NULL) {
-                                        $$ = $2;
-                                    } else {
-                                        $$ = ast_insert($1, $2);
-                                    }
-                                }
+    | statement statement_list  { $$ = A_StmtList($1, $2); }
     ;
 
 statement
     : T_UP
-        { $$ = ast_new_node0(N_STMT, STMT_UP); }
+        { $$ = A_UpStmt(TODO_NUM); }
     | T_DOWN
-        { $$ = ast_new_node0(N_STMT, STMT_DOWN); }
+        { $$ = A_DownStmt(TODO_NUM); }
     | T_MOVETO '(' expression ',' expression ')'
-        { $$ = ast_new_node2(N_STMT, STMT_MOVETO, $3, $5); }
+        { $$ = A_MoveStmt(TODO_NUM, $3, $5); }
     | T_READ '(' T_IDENT ')'
-        { $$ = ast_new_node1(N_STMT, STMT_READ, $3); }
+        { $$ = A_ReadStmt(TODO_NUM, $3); }
     | T_IDENT '=' expression
-        { $$ = ast_new_node2(N_STMT, STMT_ASSIGN, $1, $3); }
+        { $$ = A_AssignStmt(TODO_NUM, $1, $3); }
     | T_IF '(' comparison ')' compound_statement
-        { $$ = ast_new_node2(N_STMT, STMT_IFT, $3, $5); }
+        { $$ = A_IfStmt(TODO_NUM, $3, $5, NULL); }
     | T_IF '(' comparison ')' compound_statement T_ELSE compound_statement
-        { $$ = ast_new_node3(N_STMT, STMT_IFTE, $3, $5, $7); }
+        { $$ = A_IfStmt(TODO_NUM, $3, $5, $7); }
     | T_WHILE '(' comparison ')' compound_statement
-        { $$ = ast_new_node2(N_STMT, STMT_WHILE, $3, $5); }
+        { $$ = A_WhileStmt(TODO_NUM, $3, $5); }
     | T_RETURN expression
-        { $$ = ast_new_node1(N_STMT, STMT_RET, $2); }
+        { $$ = A_ReturnStmt(TODO_NUM, $2); }
     | T_IDENT '(' expression_list ')'
-        { $$ = ast_new_node2(N_STMT, STMT_FUNC_CALL, $1, $3); }
+        { $$ = A_CallStmt(TODO_NUM, $1, $3); }
     | '{' expression_list '}'
-        { $$ = $2; }
+        { $$ = A_ExpListStmt(TODO_NUM, $2); }
     ;
 
 expression_list
@@ -133,44 +157,47 @@ expression_list
     ;
 
 expressions
-    : expression                    { $$ = $1; }
-    | expressions ',' expression    { $$ = ast_insert($1, $3); }
+    : expression                    { $$ = A_ExpList($1, NULL); }
+    | expression ',' expressions    { $$ = A_ExpList($1, $3); }
     ;
 
 expression
     : expression T_PLUS expression
-        { $$ = ast_new_arith_node(EXPR_OP_PLUS, $1, $3); }
+        { $$ = A_OpExp(TODO_NUM, A_plusOp, $1, $3); }
     | expression T_MINUS expression
-        { $$ = ast_new_arith_node(EXPR_OP_MINUS, $1, $3); }
+        { $$ = A_OpExp(TODO_NUM, A_minusOp, $1, $3); }
     | expression T_MULTIPLY expression
-        { $$ = ast_new_arith_node(EXPR_OP_MULTIPLY, $1, $3); }
+        { $$ = A_OpExp(TODO_NUM, A_timesOp, $1, $3); }
     | T_MINUS expression %prec T_NEG
-        { $$ = ast_new_arith_node(EXPR_OP_NEG, $2, NULL); }
+        { $$ = A_OpExp(TODO_NUM, A_negOp, $2, NULL); }
     | T_IDENT
-        { $$ = ast_new_node(N_EXPR, EXPR_IDENT, $1, NULL, NULL, NULL); }
+        { $$ = A_VarExp(TODO_NUM, $1); }
     | T_IDENT '(' expression_list ')'
-        { $$ = ast_new_node(N_EXPR, EXPR_FUNC_CALL, $1, $3, NULL, NULL); }
+        { $$ = A_CallExp(TODO_NUM, $1, $3); }
     | '(' expression ')'
         { $$ = $2; }
     | T_INT_LITERAL
-        { $$ = $1; }
+        { $$ = A_IntExp(TODO_NUM, $1); }
     ;
 
 comparison
     : expression T_EQ expression
-        { $$ = ast_new_comp_node(COMP_EQ, $1, $3); }
+        { $$ = A_OpExp(TODO_NUM, A_EQ, $1, $3); }
     | expression LT expression
-        { $$ = ast_new_comp_node(COMP_LT, $1, $3); }
+        { $$ = A_OpExp(TODO_NUM, A_LT, $1, $3); }
     ;
 %%
 
-main ()
+int main(int argc, char *argv[])
 {
-  yyparse ();
+    yyparse();
+    return 0;
 }
 
-yyerror (char *s)  /* Called by yyparse on error */
+/* 
+int yyerror (char *s)  Called by yyparse on error 
 {
-  printf ("\terror: %s\n", s);
-}
+    printf ("\terror: %s\n", s);
+    return -1;
+}*/
 
