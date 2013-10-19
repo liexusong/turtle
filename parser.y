@@ -75,7 +75,7 @@
 
 %type <a_exp> comparison
 
-%nonassoc T_EQ LT
+%nonassoc T_EQ T_LT
 %left T_MINUS T_PLUS
 %left T_MULTIPLY
 %left T_NEG
@@ -189,7 +189,7 @@ expression
 comparison
     : expression T_EQ expression
         { $$ = A_OpExp(TODO_NUM, A_EQ, $1, $3); }
-    | expression LT expression
+    | expression T_LT expression
         { $$ = A_OpExp(TODO_NUM, A_LT, $1, $3); }
     ;
 %%

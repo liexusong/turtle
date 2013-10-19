@@ -123,7 +123,7 @@ trans_func_def_list(struct A_fundecList *list)
     for (p = list; p; p = p->tail) {
         S_enter(_fenv, p->head->name,
                 E_FunEntry(p->head->name, count_fieldList(p->head->params)));
-        log_info("Added function %s", S_name(p->head->name));
+        log_info("Added function %s with %d parameters", S_name(p->head->name), count_fieldList(p->head->params));
     }
 
     log_info("Finished adding symbol table entries");
@@ -147,6 +147,7 @@ trans_func_def_list(struct A_fundecList *list)
         E_Set_Addr(_fenv, p->head->name, addr);
         trans_local_vardecList(p->head->var);
         trans_stmt_list(p->head->body);
+        gen_Rts_Opt();
         S_endScope(_venv);
         retOffset = 0;
     }
@@ -168,11 +169,12 @@ trans_stmt(struct A_stmt *stmt)
     }
 
     struct env_entry *p;
-    int l_then, l_else, l_end;
-    int j_then, j_else, j_end;
+    int l_then, l_else;
+    int j_then, j_else;
 
-    int l_test, l_begin;
-    int j_test, j_begin;
+    int l_begin, l_end;
+    int j_begin, j_end;
+    int j_test, l_test;
 
     int i;
 
@@ -266,14 +268,21 @@ trans_stmt(struct A_stmt *stmt)
             j_else = get_next_code_index();
             gen_Jump(0);
             trans_stmt_list(stmt->u.iff.then);
-            j_end = get_next_code_index();
-            gen_Jump(0);
+
+            if (stmt->u.iff.elsee) {
+                j_end = get_next_code_index();
+                gen_Jump(0);
+            }
+
             l_else = get_next_code_index();
             trans_stmt_list(stmt->u.iff.elsee);
+
             l_end = get_next_code_index();
 
             backpatch(j_else, l_else);
-            backpatch(j_end, l_end);
+            if (stmt->u.iff.elsee) {
+                backpatch(j_end, l_end);
+            }
 
             break;
 
@@ -282,16 +291,11 @@ trans_stmt(struct A_stmt *stmt)
             if (stmt->u.whilee.test->kind != A_opExp ||
                 stmt->u.whilee.test->u.op.oper < A_EQ) {
                 log_err("error");
+                break;
             }
 
-            j_test = get_next_code_index();
-            gen_Jump(0);
-
-            l_begin = get_next_code_index();
-            trans_stmt_list(stmt->u.whilee.body);
-
             l_test = get_next_code_index();
-            switch (stmt->u.iff.test->u.op.oper) {
+            switch (stmt->u.whilee.test->u.op.oper) {
                 case A_EQ:
                 case A_LT:
                     trans_exp(stmt->u.whilee.test->u.op.left);
@@ -303,18 +307,33 @@ trans_stmt(struct A_stmt *stmt)
             }
             gen_Sub();
             gen_Test();
+            gen_Pop(1);
 
-            switch (stmt->u.iff.test->u.op.oper) {
+            j_begin = get_next_code_index();
+            switch (stmt->u.whilee.test->u.op.oper) {
                 case A_EQ:
-                    gen_Jeq(l_begin);
+                    gen_Jeq(0);
                     break;
                 case A_LT:
-                    gen_Jlt(l_begin);
+                    gen_Jlt(0);
                     break;
                 default:
                     log_err("Non");
                     break;
             }
+
+            j_end = get_next_code_index();
+            gen_Jump(0);
+
+            l_begin = get_next_code_index();
+            trans_stmt_list(stmt->u.whilee.body);
+            j_test = get_next_code_index();
+            gen_Jump(0);
+            l_end = get_next_code_index();
+
+            backpatch(j_begin, l_begin);
+            backpatch(j_end, l_end);
+            backpatch(j_test, l_test);
             break;
 
         case A_returnStmt:
