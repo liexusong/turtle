@@ -88,7 +88,8 @@ program
         {
             $$ = A_Program(S_name($2), $3, $4, $5);
             sem_trans_prog($$);
-            gen_debug();
+            //free_ast_program($$);
+            gen_debug(out_fd);
         }
     ;
 
@@ -193,12 +194,6 @@ comparison
         { $$ = A_OpExp(TODO_NUM, A_LT, $1, $3); }
     ;
 %%
-
-int main(int argc, char *argv[])
-{
-    yyparse();
-    return 0;
-}
 
 void
 yyerror(char *s, ...)

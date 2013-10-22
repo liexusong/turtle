@@ -341,7 +341,10 @@ trans_stmt(struct A_stmt *stmt)
                 log_err("Not in frame");
             }
             trans_exp(stmt->u.returnn.exp);
-            assert(retOffset < 0);
+            if (retOffset < 0) {
+                yyerror("Return from main");
+                break;
+            }
             gen_Store_FP(retOffset);
             gen_Rts();
             break;

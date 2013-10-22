@@ -22,23 +22,6 @@ error:
     return NULL;
 }
 
-/*
-struct A_var *
-A_Var(A_pos pos, struct S_symbol *sym)
-{
-    struct A_var *p = malloc(sizeof *p);
-    check_mem(p);
-
-    p->pos = pos;
-    p->sym = sym;
-
-    return p;
-
-error:
-    return NULL;
-}
-*/
-
 struct A_vardec *
 A_Vardec(A_pos pos, struct S_symbol *sym, struct A_exp *init)
 {
@@ -397,3 +380,4 @@ A_FieldList(struct A_field *head, struct A_fieldList *tail)
 error:
     return NULL;
 }
+
