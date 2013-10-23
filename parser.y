@@ -89,7 +89,11 @@ program
             $$ = A_Program(S_name($2), $3, $4, $5);
             sem_trans_prog($$);
             //free_ast_program($$);
-            gen_debug(out_fd);
+            if (sflag) {
+                gen_debug();
+            } else {
+                translate_to_binary();
+            }
         }
     ;
 

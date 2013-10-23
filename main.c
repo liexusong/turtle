@@ -5,25 +5,32 @@
 #include "lexer.h"
 #include "dbg.h"
 
-FILE *out_fd;
+FILE *fout;
+int sflag = 0;
+int dflag = 0;
 
 int main(int argc, char *argv[])
 {
     int c;
     char *oopt = NULL;
-    out_fd = stdout;
-    while ((c = getopt(argc, argv, "so:")) != -1) {
+    fout = stdout;
+    while ((c = getopt(argc, argv, "so:d")) != -1) {
         switch (c) {
             case 's':
                 printf("Output assembly code only\n");
+                sflag = 1;
                 break;
 
             case 'o':
-                out_fd = fopen(optarg, "w+");
-                check(out_fd, "Cannot open the file %s for writing", optarg);
+                fout = fopen(optarg, "w+");
+                check(fout, "Cannot open the file %s for writing", optarg);
 
                 printf("Output to %s\n", optarg);
                 oopt = optarg;
+                break;
+
+            case 'd':
+                dflag = 1;
                 break;
 
             default:
