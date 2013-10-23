@@ -11,27 +11,27 @@
 %locations
 
 %union{
-    struct A_program *a_program;
-    struct A_VAR *a_var;
+    struct ast_program *a_program;
+    struct ast_VAR *a_var;
 
-    struct A_vardec *a_vardec;
-    struct A_vardecList *a_vardeclist;
+    struct ast_var_dec *a_vardec;
+    struct ast_var_dec_list *a_vardeclist;
 
-    struct A_fundec *a_fundec;
-    struct A_fundecList *a_fundeclist;
+    struct ast_fun_dec *a_fundec;
+    struct ast_fun_dec_list *a_fundeclist;
 
-    struct A_exp *a_exp;
-    struct A_expList *a_explist;
+    struct ast_exp *a_exp;
+    struct ast_exp_list *a_explist;
 
-    struct A_stmt *a_stmt;
-    struct A_stmtList *a_stmtlist;
+    struct ast_stmt *a_stmt;
+    struct ast_stmt_list *a_stmtlist;
 
-    struct A_field *a_field;
-    struct A_fieldList *a_fieldlist;
+    struct ast_field *a_field;
+    struct ast_field_list *a_fieldlist;
 
     int val;
 
-    struct S_symbol *sym;
+    struct s_symbol *sym;
 }
 
 %token T_TURTLE
@@ -86,7 +86,7 @@
 program
     : T_TURTLE T_IDENT var_decls func_decls compound_statement
         {
-            $$ = A_Program(S_name($2), $3, $4, $5);
+            $$ = ast_new_program(s_name($2), $3, $4, $5);
             sem_trans_prog($$);
             //free_ast_program($$);
             if (sflag) {
@@ -99,23 +99,23 @@ program
 
 var_decls
     : /* empty */           { $$ = NULL; }
-    | var_decl var_decls    { $$ = A_VardecList($1, $2); }
+    | var_decl var_decls    { $$ = ast_new_var_dec_list($1, $2); }
     ;
 
 var_decl
     : T_VAR T_IDENT
-        { $$ = A_Vardec(TODO_NUM, $2, A_IntExp(TODO_NUM, 0)); }
-    | T_VAR T_IDENT '=' expression  { $$ = A_Vardec(TODO_NUM, $2, $4); }
+        { $$ = ast_new_var_dec(TODO_NUM, $2, ast_int_exp(TODO_NUM, 0)); }
+    | T_VAR T_IDENT '=' expression  { $$ = ast_new_var_dec(TODO_NUM, $2, $4); }
     ;
 
 func_decls
     : /* empty */           { $$ = NULL; }
-    | func_decl func_decls  { $$ = A_FundecList($1, $2); }
+    | func_decl func_decls  { $$ = ast_new_fundec_list($1, $2); }
     ;
 
 func_decl
     : T_FUN T_IDENT '(' idents_list ')' var_decls compound_statement
-        { $$ = A_Fundec(TODO_NUM, $2, $4, $6, $7); }
+        { $$ = ast_new_fundec(TODO_NUM, $2, $4, $6, $7); }
     ;
 
 idents_list
@@ -124,8 +124,8 @@ idents_list
     ;
 
 idents
-    : T_IDENT               { $$ = A_FieldList(A_Field(TODO_NUM, $1), NULL); }
-    | T_IDENT ',' idents    { $$ = A_FieldList(A_Field(TODO_NUM, $1), $3); }
+    : T_IDENT               { $$ = ast_new_field_list(ast_new_field(TODO_NUM, $1), NULL); }
+    | T_IDENT ',' idents    { $$ = ast_new_field_list(ast_new_field(TODO_NUM, $1), $3); }
     ;
 
 compound_statement
@@ -134,32 +134,32 @@ compound_statement
 
 statement_list
     : /* empty */               { $$ = NULL; }
-    | statement statement_list  { $$ = A_StmtList($1, $2); }
+    | statement statement_list  { $$ = ast_new_stmt_list($1, $2); }
     ;
 
 statement
     : T_UP
-        { $$ = A_UpStmt(TODO_NUM); }
+        { $$ = ast_new_up_stmt(TODO_NUM); }
     | T_DOWN
-        { $$ = A_DownStmt(TODO_NUM); }
+        { $$ = ast_new_down_stmt(TODO_NUM); }
     | T_MOVETO '(' expression ',' expression ')'
-        { $$ = A_MoveStmt(TODO_NUM, $3, $5); }
+        { $$ = ast_new_move_stmt(TODO_NUM, $3, $5); }
     | T_READ '(' T_IDENT ')'
-        { $$ = A_ReadStmt(TODO_NUM, $3); }
+        { $$ = ast_new_read_stmt(TODO_NUM, $3); }
     | T_IDENT '=' expression
-        { $$ = A_AssignStmt(TODO_NUM, $1, $3); }
+        { $$ = ast_new_assign_stmt(TODO_NUM, $1, $3); }
     | T_IF '(' comparison ')' compound_statement
-        { $$ = A_IfStmt(TODO_NUM, $3, $5, NULL); }
+        { $$ = ast_new_if_stmt(TODO_NUM, $3, $5, NULL); }
     | T_IF '(' comparison ')' compound_statement T_ELSE compound_statement
-        { $$ = A_IfStmt(TODO_NUM, $3, $5, $7); }
+        { $$ = ast_new_if_stmt(TODO_NUM, $3, $5, $7); }
     | T_WHILE '(' comparison ')' compound_statement
-        { $$ = A_WhileStmt(TODO_NUM, $3, $5); }
+        { $$ = ast_new_while_stmt(TODO_NUM, $3, $5); }
     | T_RETURN expression
-        { $$ = A_ReturnStmt(TODO_NUM, $2); }
+        { $$ = ast_new_return_stmt(TODO_NUM, $2); }
     | T_IDENT '(' expression_list ')'
-        { $$ = A_CallStmt(TODO_NUM, $1, $3); }
+        { $$ = ast_new_call_stmt(TODO_NUM, $1, $3); }
     | '{' expression_list '}'
-        { $$ = A_ExpListStmt(TODO_NUM, $2); }
+        { $$ = ast_new_exp_list_stmt(TODO_NUM, $2); }
     ;
 
 expression_list
@@ -168,34 +168,34 @@ expression_list
     ;
 
 expressions
-    : expression                    { $$ = A_ExpList($1, NULL); }
-    | expression ',' expressions    { $$ = A_ExpList($1, $3); }
+    : expression                    { $$ = ast_new_exp_list($1, NULL); }
+    | expression ',' expressions    { $$ = ast_new_exp_list($1, $3); }
     ;
 
 expression
     : expression T_PLUS expression
-        { $$ = A_OpExp(TODO_NUM, A_plusOp, $1, $3); }
+        { $$ = ast_new_op_exp(TODO_NUM, ast_plusOp, $1, $3); }
     | expression T_MINUS expression
-        { $$ = A_OpExp(TODO_NUM, A_minusOp, $1, $3); }
+        { $$ = ast_new_op_exp(TODO_NUM, ast_minusOp, $1, $3); }
     | expression T_MULTIPLY expression
-        { $$ = A_OpExp(TODO_NUM, A_timesOp, $1, $3); }
+        { $$ = ast_new_op_exp(TODO_NUM, ast_timesOp, $1, $3); }
     | T_MINUS expression %prec T_NEG
-        { $$ = A_OpExp(TODO_NUM, A_negOp, $2, NULL); }
+        { $$ = ast_new_op_exp(TODO_NUM, ast_negOp, $2, NULL); }
     | T_IDENT
-        { $$ = A_VarExp(TODO_NUM, $1); }
+        { $$ = ast_new_var_exp(TODO_NUM, $1); }
     | T_IDENT '(' expression_list ')'
-        { $$ = A_CallExp(TODO_NUM, $1, $3); }
+        { $$ = ast_new_call_exp(TODO_NUM, $1, $3); }
     | '(' expression ')'
         { $$ = $2; }
     | T_INT_LITERAL
-        { $$ = A_IntExp(TODO_NUM, $1); }
+        { $$ = ast_int_exp(TODO_NUM, $1); }
     ;
 
 comparison
     : expression T_EQ expression
-        { $$ = A_OpExp(TODO_NUM, A_EQ, $1, $3); }
+        { $$ = ast_new_op_exp(TODO_NUM, ast_EQ, $1, $3); }
     | expression T_LT expression
-        { $$ = A_OpExp(TODO_NUM, A_LT, $1, $3); }
+        { $$ = ast_new_op_exp(TODO_NUM, ast_LT, $1, $3); }
     ;
 %%
 
@@ -224,4 +224,5 @@ lyyerror(YYLTYPE t, char *s, ...)
     vfprintf(stderr, s, ap);
     fprintf(stderr, "\n");
 }
+
 

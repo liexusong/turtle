@@ -5,14 +5,14 @@
 
 static int nested_level = 0;
 
-struct S_symbol {
+struct s_symbol {
     char *name;
-    struct S_symbol *next;
+    struct s_symbol *next;
 };
 
-static struct S_symbol *mksymbol(char *name, struct S_symbol *next)
+static struct s_symbol *mksymbol(char *name, struct s_symbol *next)
 {
-    struct S_symbol *s = malloc(sizeof *s);
+    struct s_symbol *s = malloc(sizeof *s);
     check_mem(s);
 
     s->name = name;
@@ -26,7 +26,7 @@ error:
 
 #define SIZE 109
 
-static struct S_symbol *hashtable[SIZE];
+static struct s_symbol *hashtable[SIZE];
 
 static unsigned int
 hash(char *s0)
@@ -39,19 +39,14 @@ hash(char *s0)
     return h;
 }
 
-static int streq(char *a, char *b)
-{
-    return strcmp(a, b) == 0;
-}
-
-struct S_symbol*
-S_Symbol(char *name)
+struct s_symbol*
+s_new_symbol(char *name)
 {
     int index = hash(name) % SIZE;
-    struct S_symbol *syms = hashtable[index];
-    struct S_symbol *sym;
+    struct s_symbol *syms = hashtable[index];
+    struct s_symbol *sym;
     for (sym = syms; sym; sym = sym->next) {
-        if (streq(sym->name, name)) {
+        if (strcmp(sym->name, name) == 0) {
             return sym;
         }
     }
@@ -60,47 +55,47 @@ S_Symbol(char *name)
     return sym;
 }
 
-char *S_name(struct S_symbol *sym)
+char *s_name(struct s_symbol *sym)
 {
     return sym->name;
 }
 
-struct hash_table*
-S_empty(void)
+struct table*
+s_new_empty(void)
 {
-    return hash_table_empty();
+    return table_new_empty();
 }
 
 void
-S_enter(struct hash_table *t, struct S_symbol *sym, void *value)
+s_enter(struct table *t, struct s_symbol *sym, void *value)
 {
-    hash_insert(t, sym, value);
+    table_insert(t, sym, value);
 }
 
 void *
-S_look(struct hash_table *t, struct S_symbol *sym)
+s_find(struct table *t, struct s_symbol *sym)
 {
-    return hash_lookup(t, sym);
+    return table_find(t, sym);
 }
 
-struct S_symbol marksym = {"<mark>", NULL};
+struct s_symbol marksym = {"<mark>", NULL};
 
-void S_beginScope(struct hash_table *t)
+void s_enter_scope(struct table *t)
 {
-    S_enter(t, &marksym, NULL);
+    s_enter(t, &marksym, NULL);
     nested_level += 1;
 }
 
-void S_endScope(struct hash_table *t)
+void s_leave_scope(struct table *t)
 {
-    struct S_symbol *s;
+    struct s_symbol *s;
     do {
-        s = hash_pop(t);
+        s = table_pop(t);
     } while (s != &marksym);
     nested_level -= 1;
 }
 
-int in_frame(void)
+int s_in_scope(void)
 {
     return nested_level >= 1;
 }

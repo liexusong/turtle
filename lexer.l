@@ -47,7 +47,7 @@ ident       [a-zA-Z][a-zA-Z0-9\_\']*
 
 <<EOF>>     { yyterminate(); }
 
-{ident}     { yylval.sym = S_Symbol(strdup(yytext)); log_info("%s", S_name(yylval.sym)); return T_IDENT; }
+{ident}     { yylval.sym = s_new_symbol(strdup(yytext)); log_info("%s", s_name(yylval.sym)); return T_IDENT; }
 {digit}+    { sscanf(yytext, "%d", &(yylval.val)); return T_INT_LITERAL; }
 .           { return yytext[0]; }
 

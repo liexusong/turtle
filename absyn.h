@@ -3,169 +3,169 @@
 
 #include "symbol.h"
 
-typedef int A_pos;
+typedef int ast_pos;
 
-struct A_program {
+struct ast_program {
     char *name;
-    struct A_vardecList *global_var_def_list;
-    struct A_fundecList *func_def_list;
-    struct A_stmtList *body;
+    struct ast_var_dec_list *global_var_def_list;
+    struct ast_fun_dec_list *func_def_list;
+    struct ast_stmt_list *body;
 };
 
-enum A_oper {
-    A_plusOp,
-    A_minusOp,
-    A_timesOp,
-    A_negOp,
-    A_EQ,
-    A_LT,
+enum ast_oper {
+    ast_plusOp,
+    ast_minusOp,
+    ast_timesOp,
+    ast_negOp,
+    ast_EQ,
+    ast_LT,
 };
 
-struct A_vardec {
-    A_pos pos;
-    struct S_symbol *sym;
-    struct A_exp *init;
+struct ast_var_dec {
+    ast_pos pos;
+    struct s_symbol *sym;
+    struct ast_exp *init;
 };
 
-struct A_vardecList {
-    struct A_vardec *head;
-    struct A_vardecList *tail;
+struct ast_var_dec_list {
+    struct ast_var_dec *head;
+    struct ast_var_dec_list *tail;
 };
 
-struct A_fundec {
-    A_pos pos;
-    struct S_symbol *name;
-    struct A_fieldList *params;
-    struct A_vardecList *var;
-    struct A_stmtList *body;
+struct ast_fun_dec {
+    ast_pos pos;
+    struct s_symbol *name;
+    struct ast_field_list *params;
+    struct ast_var_dec_list *var;
+    struct ast_stmt_list *body;
 };
 
-struct A_fundecList {
-    struct A_fundec *head;
-    struct A_fundecList *tail;
+struct ast_fun_dec_list {
+    struct ast_fun_dec *head;
+    struct ast_fun_dec_list *tail;
 };
 
-struct A_exp {
+struct ast_exp {
     enum {
-        A_varExp,
-        A_intExp,
-        A_callExp,
-        A_opExp,
+        ast_varExp,
+        ast_intExp,
+        ast_callExp,
+        ast_opExp,
     } kind;
-    A_pos pos;
+    ast_pos pos;
     union {
-        struct S_symbol *var;
+        struct s_symbol *var;
         int intt;
         struct {
-            struct S_symbol *func;
-            struct A_expList *args;
+            struct s_symbol *func;
+            struct ast_exp_list *args;
         } call;
         struct {
-            enum A_oper oper;
-            struct A_exp *left;
-            struct A_exp *right;
+            enum ast_oper oper;
+            struct ast_exp *left;
+            struct ast_exp *right;
         } op;
     } u;
 };
 
-struct A_expList {
-    struct A_exp *head;
-    struct A_expList *tail;
+struct ast_exp_list {
+    struct ast_exp *head;
+    struct ast_exp_list *tail;
 };
 
-struct A_stmt {
+struct ast_stmt {
     enum {
-        A_upStmt,
-        A_downStmt,
-        A_moveStmt,
-        A_readStmt,
-        A_assignStmt,
-        A_ifStmt,
-        A_whileStmt,
-        A_returnStmt,
-        A_callStmt,
-        A_expListStmt,
+        ast_upStmt,
+        ast_downStmt,
+        ast_moveStmt,
+        ast_readStmt,
+        ast_assignStmt,
+        ast_ifStmt,
+        ast_whileStmt,
+        ast_returnStmt,
+        ast_callStmt,
+        ast_exp_listStmt,
     } kind;
-    A_pos pos;
+    ast_pos pos;
     union {
         /* up; - needs only the pos */
         /* down; - needs only the pos */
         struct {
-            struct A_exp *exp1;
-            struct A_exp *exp2;
+            struct ast_exp *exp1;
+            struct ast_exp *exp2;
         } move;
         struct {
-            struct S_symbol *var;
+            struct s_symbol *var;
         } read;
         struct {
-            struct S_symbol *var;
-            struct A_exp *exp;
+            struct s_symbol *var;
+            struct ast_exp *exp;
         } assign;
         struct {
-            struct A_exp *test;
-            struct A_stmtList *then;
-            struct A_stmtList *elsee;
+            struct ast_exp *test;
+            struct ast_stmt_list *then;
+            struct ast_stmt_list *elsee;
         } iff;
         struct {
-            struct A_exp *test;
-            struct A_stmtList *body;
+            struct ast_exp *test;
+            struct ast_stmt_list *body;
         } whilee;
         struct {
-            struct A_exp *exp;
+            struct ast_exp *exp;
         } returnn;
         struct {
-            struct S_symbol *func;
-            struct A_expList *args;
+            struct s_symbol *func;
+            struct ast_exp_list *args;
         } call;
-        struct A_expList *seq;
+        struct ast_exp_list *seq;
     } u;
 };
 
-struct A_stmtList {
-    struct A_stmt *head;
-    struct A_stmtList *tail;
+struct ast_stmt_list {
+    struct ast_stmt *head;
+    struct ast_stmt_list *tail;
 };
 
-struct A_field {
-    A_pos pos;
-    struct S_symbol *name;
+struct ast_field {
+    ast_pos pos;
+    struct s_symbol *name;
 };
 
-struct A_fieldList {
-    struct A_field *head;
-    struct A_fieldList *tail;
+struct ast_field_list {
+    struct ast_field *head;
+    struct ast_field_list *tail;
 };
 
 
-struct A_program *A_Program(char *program_name, struct A_vardecList *global_var_def_list, struct A_fundecList *func_def_list, struct A_stmtList *body);
+struct ast_program *ast_new_program(char *program_name, struct ast_var_dec_list *global_var_def_list, struct ast_fun_dec_list *func_def_list, struct ast_stmt_list *body);
 
-//struct A_var *A_Var(A_pos pos, struct S_symbol *sym);
+//struct ast_var *ast_Var(ast_pos pos, struct s_symbol *sym);
 
-struct A_vardec *A_Vardec(A_pos pos, struct S_symbol *sym, struct A_exp *init);
-struct A_vardecList *A_VardecList(struct A_vardec *head, struct A_vardecList *tail);
+struct ast_var_dec *ast_new_var_dec(ast_pos pos, struct s_symbol *sym, struct ast_exp *init);
+struct ast_var_dec_list *ast_new_var_dec_list(struct ast_var_dec *head, struct ast_var_dec_list *tail);
 
-struct A_fundec *A_Fundec(A_pos pos, struct S_symbol *name, struct A_fieldList *params, struct A_vardecList *var, struct A_stmtList *body);
-struct A_fundecList *A_FundecList(struct A_fundec *head, struct A_fundecList *tail);
+struct ast_fun_dec *ast_new_fundec(ast_pos pos, struct s_symbol *name, struct ast_field_list *params, struct ast_var_dec_list *var, struct ast_stmt_list *body);
+struct ast_fun_dec_list *ast_new_fundec_list(struct ast_fun_dec *head, struct ast_fun_dec_list *tail);
 
-struct A_exp *A_VarExp(A_pos pos, struct S_symbol *var);
-struct A_exp *A_IntExp(A_pos pos, int i);
-struct A_exp *A_CallExp(A_pos pos, struct S_symbol *func, struct A_expList *args);
-struct A_exp *A_OpExp(A_pos pos, enum A_oper oper, struct A_exp *left, struct A_exp *right);
-struct A_expList *A_ExpList(struct A_exp *head, struct A_expList *tail);
+struct ast_exp *ast_new_var_exp(ast_pos pos, struct s_symbol *var);
+struct ast_exp *ast_int_exp(ast_pos pos, int i);
+struct ast_exp *ast_new_call_exp(ast_pos pos, struct s_symbol *func, struct ast_exp_list *args);
+struct ast_exp *ast_new_op_exp(ast_pos pos, enum ast_oper oper, struct ast_exp *left, struct ast_exp *right);
+struct ast_exp_list *ast_new_exp_list(struct ast_exp *head, struct ast_exp_list *tail);
 
-struct A_stmt *A_UpStmt(A_pos pos);
-struct A_stmt *A_DownStmt(A_pos pos);
-struct A_stmt *A_MoveStmt(A_pos pos, struct A_exp *exp1, struct A_exp *exp2);
-struct A_stmt *A_ReadStmt(A_pos pos, struct S_symbol *var);
-struct A_stmt *A_AssignStmt(A_pos pos, struct S_symbol *var, struct A_exp *exp);
-struct A_stmt *A_IfStmt(A_pos pos, struct A_exp *test, struct A_stmtList *then, struct A_stmtList *elsee);
-struct A_stmt *A_WhileStmt(A_pos pos, struct A_exp *test, struct A_stmtList *body);
-struct A_stmt *A_ReturnStmt(A_pos pos, struct A_exp *exp);
-struct A_stmt *A_CallStmt(A_pos pos, struct S_symbol *func, struct A_expList *args);
-struct A_stmt *A_ExpListStmt(A_pos pos, struct A_expList *list);
-struct A_stmtList *A_StmtList(struct A_stmt *head, struct A_stmtList *tail);
+struct ast_stmt *ast_new_up_stmt(ast_pos pos);
+struct ast_stmt *ast_new_down_stmt(ast_pos pos);
+struct ast_stmt *ast_new_move_stmt(ast_pos pos, struct ast_exp *exp1, struct ast_exp *exp2);
+struct ast_stmt *ast_new_read_stmt(ast_pos pos, struct s_symbol *var);
+struct ast_stmt *ast_new_assign_stmt(ast_pos pos, struct s_symbol *var, struct ast_exp *exp);
+struct ast_stmt *ast_new_if_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *then, struct ast_stmt_list *elsee);
+struct ast_stmt *ast_new_while_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *body);
+struct ast_stmt *ast_new_return_stmt(ast_pos pos, struct ast_exp *exp);
+struct ast_stmt *ast_new_call_stmt(ast_pos pos, struct s_symbol *func, struct ast_exp_list *args);
+struct ast_stmt *ast_new_exp_list_stmt(ast_pos pos, struct ast_exp_list *list);
+struct ast_stmt_list *ast_new_stmt_list(struct ast_stmt *head, struct ast_stmt_list *tail);
 
-struct A_field *A_Field(A_pos pos, struct S_symbol *name);
-struct A_fieldList *A_FieldList(struct A_field *head, struct A_fieldList *tail);
+struct ast_field *ast_new_field(ast_pos pos, struct s_symbol *name);
+struct ast_field_list *ast_new_field_list(struct ast_field *head, struct ast_field_list *tail);
 
 #endif /* end of include guard: AST_H_ */

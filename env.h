@@ -5,16 +5,16 @@
 #include "hash.h"
 
 enum env_var_scope {
-    E_Global,
-    E_Local,
+    env_global,
+    env_local,
 };
 
 struct env_entry {
     enum {
-        E_varEntry,
-        E_funEntry,
+        env_varEntry,
+        env_funEntry,
     } kind;
-    struct S_symbol *sym;
+    struct s_symbol *sym;
     int index;
     union {
         struct {
@@ -26,12 +26,12 @@ struct env_entry {
     } u;
 };
 
-struct env_entry *E_VarEntry(struct S_symbol *sym, enum env_var_scope scope, int index);
-struct env_entry *E_FunEntry(struct S_symbol *sym, int count_params);
+struct env_entry *env_new_var(struct s_symbol *sym, enum env_var_scope scope, int index);
+struct env_entry *env_new_fun(struct s_symbol *sym, int count_params);
 
-void E_Set_Addr(struct hash_table *t, struct S_symbol *sym, int addr);
+void env_set_addr(struct table *t, struct s_symbol *sym, int addr);
 
-struct hash_table *E_base_venv(void);
-struct hash_table *E_base_fenv(void);
+struct table *env_base_venv(void);
+struct table *env_base_fenv(void);
 
 #endif /* end of include guard: ENV_H_ */

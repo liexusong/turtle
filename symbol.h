@@ -1,25 +1,25 @@
 #ifndef SYMBOL_H_
 #define SYMBOL_H_
 
-struct S_symbol;
+struct s_symbol;
 
-struct S_symbol* S_Symbol(char *name);
+struct s_symbol* s_new_symbol(char *name);
 
-char *S_name(struct S_symbol *sym);
+char *s_name(struct s_symbol *sym);
 
-struct hash_table *S_empty(void);
+struct table *s_new_empty(void);
 
-void S_enter(struct hash_table *t, struct S_symbol *sym, void *value);
+void s_enter(struct table *t, struct s_symbol *sym, void *value);
 
-void *S_look(struct hash_table *t, struct S_symbol *sym);
+void *s_find(struct table *t, struct s_symbol *sym);
 
-void S_beginScope(struct hash_table *t);
+void s_enter_scope(struct table *t);
 
-void S_endScope(struct hash_table *t);
+void s_leave_scope(struct table *t);
 
-int in_frame(void);
+int s_in_scope(void);
 
-extern struct S_symbol marksym;
+extern struct s_symbol marksym;
 
 #endif /* end of include guard: SYMBOL_H_ */
 

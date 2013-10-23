@@ -4,11 +4,11 @@
 #include "parser.h"
 #include "lexer.h"
 
-struct A_program *
-A_Program(char *program_name, struct A_vardecList *global_var_def_list,
-          struct A_fundecList *func_def_list, struct A_stmtList *body)
+struct ast_program *
+ast_new_program(char *program_name, struct ast_var_dec_list *global_var_def_list,
+          struct ast_fun_dec_list *func_def_list, struct ast_stmt_list *body)
 {
-    struct A_program *p = malloc(sizeof *p);
+    struct ast_program *p = malloc(sizeof *p);
     check_mem(p);
 
     p->name = program_name;
@@ -22,16 +22,16 @@ error:
     return NULL;
 }
 
-struct A_vardec *
-A_Vardec(A_pos pos, struct S_symbol *sym, struct A_exp *init)
+struct ast_var_dec *
+ast_new_var_dec(ast_pos pos, struct s_symbol *sym, struct ast_exp *init)
 {
-    struct A_vardec *p = malloc(sizeof *p);
+    struct ast_var_dec *p = malloc(sizeof *p);
     check_mem(p);
 
     p->pos = pos;
     p->sym = sym;
     p->init = init;
-    log_info("A_Vardec(%s)\n", S_name(sym));
+    log_info("ast_var_dec(%s)\n", s_name(sym));
 
     return p;
 
@@ -39,10 +39,10 @@ error:
     return NULL;
 }
 
-struct A_vardecList*
-A_VardecList(struct A_vardec *head, struct A_vardecList *tail)
+struct ast_var_dec_list*
+ast_new_var_dec_list(struct ast_var_dec *head, struct ast_var_dec_list *tail)
 {
-    struct A_vardecList *p = malloc(sizeof *p);
+    struct ast_var_dec_list *p = malloc(sizeof *p);
     check_mem(p);
 
     p->head = head;
@@ -54,10 +54,11 @@ error:
     return NULL;
 }
 
-struct A_fundec *
-A_Fundec(A_pos pos, struct S_symbol *name, struct A_fieldList *params, struct A_vardecList *var, struct A_stmtList *body)
+struct ast_fun_dec *
+ast_new_fundec(ast_pos pos, struct s_symbol *name, struct ast_field_list *params,
+               struct ast_var_dec_list *var, struct ast_stmt_list *body)
 {
-    struct A_fundec *p = malloc(sizeof *p);
+    struct ast_fun_dec *p = malloc(sizeof *p);
     check_mem(p);
 
     p->pos = pos;
@@ -72,10 +73,10 @@ error:
     return NULL;
 }
 
-struct A_fundecList *
-A_FundecList(struct A_fundec *head, struct A_fundecList *tail)
+struct ast_fun_dec_list *
+ast_new_fundec_list(struct ast_fun_dec *head, struct ast_fun_dec_list *tail)
 {
-    struct A_fundecList *p = malloc(sizeof *p);
+    struct ast_fun_dec_list *p = malloc(sizeof *p);
     check_mem(p);
 
     p->head = head;
@@ -87,13 +88,13 @@ error:
     return NULL;
 }
 
-struct A_exp *
-A_VarExp(A_pos pos, struct S_symbol *var)
+struct ast_exp *
+ast_new_var_exp(ast_pos pos, struct s_symbol *var)
 {
-    struct A_exp *p = malloc(sizeof *p);
+    struct ast_exp *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_varExp;
+    p->kind = ast_varExp;
     p->pos = pos;
     p->u.var = var;
 
@@ -103,13 +104,13 @@ error:
     return NULL;
 }
 
-struct A_exp *
-A_IntExp(A_pos pos, int i)
+struct ast_exp *
+ast_int_exp(ast_pos pos, int i)
 {
-    struct A_exp *p = malloc(sizeof *p);
+    struct ast_exp *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_intExp;
+    p->kind = ast_intExp;
     p->pos = pos;
     p->u.intt = i;
 
@@ -119,13 +120,13 @@ error:
     return NULL;
 }
 
-struct A_exp *
-A_CallExp(A_pos pos, struct S_symbol *func, struct A_expList *args)
+struct ast_exp *
+ast_new_call_exp(ast_pos pos, struct s_symbol *func, struct ast_exp_list *args)
 {
-    struct A_exp *p = malloc(sizeof *p);
+    struct ast_exp *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_callExp;
+    p->kind = ast_callExp;
     p->pos = pos;
     p->u.call.func = func;
     p->u.call.args = args;
@@ -136,13 +137,13 @@ error:
     return NULL;
 }
 
-struct A_exp *
-A_OpExp(A_pos pos, enum A_oper oper, struct A_exp *left, struct A_exp *right)
+struct ast_exp *
+ast_new_op_exp(ast_pos pos, enum ast_oper oper, struct ast_exp *left, struct ast_exp *right)
 {
-    struct A_exp *p = malloc(sizeof *p);
+    struct ast_exp *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_opExp;
+    p->kind = ast_opExp;
     p->pos = pos;
     p->u.op.oper = oper;
     p->u.op.left = left;
@@ -155,13 +156,13 @@ error:
 }
 
 
-struct A_stmt *
-A_UpStmt(A_pos pos)
+struct ast_stmt *
+ast_new_up_stmt(ast_pos pos)
 {
-    struct A_stmt *p = malloc(sizeof *p);
+    struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_upStmt;
+    p->kind = ast_upStmt;
     p->pos = pos;
 
     return p;
@@ -170,13 +171,13 @@ error:
     return NULL;
 }
 
-struct A_stmt *
-A_DownStmt(A_pos pos)
+struct ast_stmt *
+ast_new_down_stmt(ast_pos pos)
 {
-    struct A_stmt *p = malloc(sizeof *p);
+    struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_downStmt;
+    p->kind = ast_downStmt;
     p->pos = pos;
 
     return p;
@@ -186,13 +187,13 @@ error:
 }
 
 
-struct A_stmt *
-A_MoveStmt(A_pos pos, struct A_exp *exp1, struct A_exp *exp2)
+struct ast_stmt *
+ast_new_move_stmt(ast_pos pos, struct ast_exp *exp1, struct ast_exp *exp2)
 {
-    struct A_stmt *p = malloc(sizeof *p);
+    struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_moveStmt;
+    p->kind = ast_moveStmt;
     p->pos = pos;
     p->u.move.exp1 = exp1;
     p->u.move.exp2 = exp2;
@@ -203,13 +204,13 @@ error:
     return NULL;
 }
 
-struct A_stmt *
-A_ReadStmt(A_pos pos, struct S_symbol *var)
+struct ast_stmt *
+ast_new_read_stmt(ast_pos pos, struct s_symbol *var)
 {
-    struct A_stmt *p = malloc(sizeof *p);
+    struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_readStmt;
+    p->kind = ast_readStmt;
     p->pos = pos;
     p->u.read.var = var;
     return p;
@@ -218,13 +219,13 @@ error:
     return NULL;
 }
 
-struct A_stmt *
-A_AssignStmt(A_pos pos, struct S_symbol *var, struct A_exp *exp)
+struct ast_stmt *
+ast_new_assign_stmt(ast_pos pos, struct s_symbol *var, struct ast_exp *exp)
 {
-    struct A_stmt *p = malloc(sizeof *p);
+    struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_assignStmt;
+    p->kind = ast_assignStmt;
     p->pos = pos;
     p->u.assign.var = var;
     p->u.assign.exp = exp;
@@ -235,13 +236,13 @@ error:
     return NULL;
 }
 
-struct A_stmt *
-A_IfStmt(A_pos pos, struct A_exp *test, struct A_stmtList *then, struct A_stmtList *elsee)
+struct ast_stmt *
+ast_new_if_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *then, struct ast_stmt_list *elsee)
 {
-    struct A_stmt *p = malloc(sizeof *p);
+    struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_ifStmt;
+    p->kind = ast_ifStmt;
     p->pos = pos;
     p->u.iff.test = test;
     p->u.iff.then = then;
@@ -253,13 +254,13 @@ error:
     return NULL;
 }
 
-struct A_stmt *
-A_WhileStmt(A_pos pos, struct A_exp *test, struct A_stmtList *body)
+struct ast_stmt *
+ast_new_while_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *body)
 {
-    struct A_stmt *p = malloc(sizeof *p);
+    struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_whileStmt;
+    p->kind = ast_whileStmt;
     p->pos = pos;
     p->u.whilee.test = test;
     p->u.whilee.body = body;
@@ -270,13 +271,13 @@ error:
     return NULL;
 }
 
-struct A_stmt *
-A_ReturnStmt(A_pos pos, struct A_exp *exp)
+struct ast_stmt *
+ast_new_return_stmt(ast_pos pos, struct ast_exp *exp)
 {
-    struct A_stmt *p = malloc(sizeof *p);
+    struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_returnStmt;
+    p->kind = ast_returnStmt;
     p->pos = pos;
     p->u.returnn.exp = exp;
 
@@ -286,13 +287,13 @@ error:
     return NULL;
 }
 
-struct A_stmt *
-A_CallStmt(A_pos pos, struct S_symbol *func, struct A_expList *args)
+struct ast_stmt *
+ast_new_call_stmt(ast_pos pos, struct s_symbol *func, struct ast_exp_list *args)
 {
-    struct A_stmt *p = malloc(sizeof *p);
+    struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_callStmt;
+    p->kind = ast_callStmt;
     p->pos = pos;
     p->u.call.func = func;
     p->u.call.args = args;
@@ -303,13 +304,13 @@ error:
     return NULL;
 }
 
-struct A_stmt *
-A_ExpListStmt(A_pos pos, struct A_expList *list)
+struct ast_stmt *
+ast_new_exp_list_stmt(ast_pos pos, struct ast_exp_list *list)
 {
-    struct A_stmt *p = malloc(sizeof *p);
+    struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = A_expListStmt;
+    p->kind = ast_exp_listStmt;
     p-> pos = pos;
     p->u.seq = list;
 
@@ -319,10 +320,10 @@ error:
     return NULL;
 }
 
-struct A_expList *
-A_ExpList(struct A_exp *head, struct A_expList *tail)
+struct ast_exp_list *
+ast_new_exp_list(struct ast_exp *head, struct ast_exp_list *tail)
 {
-    struct A_expList *p = malloc(sizeof *p);
+    struct ast_exp_list *p = malloc(sizeof *p);
     check_mem(p);
 
     p->head = head;
@@ -335,10 +336,10 @@ error:
 
 }
 
-struct A_stmtList *
-A_StmtList(struct A_stmt *head, struct A_stmtList *tail)
+struct ast_stmt_list *
+ast_new_stmt_list(struct ast_stmt *head, struct ast_stmt_list *tail)
 {
-    struct A_stmtList *p = malloc(sizeof *p);
+    struct ast_stmt_list *p = malloc(sizeof *p);
     check_mem(p);
 
     p->head = head;
@@ -351,10 +352,10 @@ error:
 
 }
 
-struct A_field *
-A_Field(A_pos pos, struct S_symbol *name)
+struct ast_field *
+ast_new_field(ast_pos pos, struct s_symbol *name)
 {
-    struct A_field *p = malloc(sizeof *p);
+    struct ast_field *p = malloc(sizeof *p);
     check_mem(p);
 
     p->pos = pos;
@@ -366,10 +367,10 @@ error:
     return NULL;
 }
 
-struct A_fieldList *
-A_FieldList(struct A_field *head, struct A_fieldList *tail)
+struct ast_field_list *
+ast_new_field_list(struct ast_field *head, struct ast_field_list *tail)
 {
-    struct A_fieldList *p = malloc(sizeof *p);
+    struct ast_field_list *p = malloc(sizeof *p);
     check_mem(p);
 
     p->head = head;
