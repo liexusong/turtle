@@ -2,7 +2,7 @@
 #define ENV_H_
 
 #include "symbol.h"
-#include "hash.h"
+#include "table.h"
 
 enum env_var_scope {
     env_global,

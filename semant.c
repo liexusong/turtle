@@ -1,6 +1,6 @@
 #include "global.h"
 #include "semant.h"
-#include "hash.h"
+#include "table.h"
 #include "env.h"
 
 #include "instruction.h"

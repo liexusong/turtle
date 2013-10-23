@@ -1,5 +1,5 @@
 #include "global.h"
-#include "hash.h"
+#include "table.h"
 #include "dbg.h"
 
 #define TBL_SIZE 109
