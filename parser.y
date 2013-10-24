@@ -74,8 +74,13 @@
 %token T_MINUS
 %token T_PLUS
 %token T_MULTIPLY
+
 %token T_EQ
+%token T_NEQ
+%token T_LEQ
 %token T_LT
+%token T_GEQ
+%token T_GT
 
 %token <sym> T_IDENT
 %token <val> T_INT_LITERAL
@@ -130,8 +135,8 @@ var_decls
 
 var_decl
     : T_VAR T_IDENT
-        { $$ = ast_new_var_dec(yylineno, $2, ast_int_exp(yylineno, 0)); }
-    | T_VAR T_IDENT '=' expression  { $$ = ast_new_var_dec(yylineno, $2, $4); }
+        { $$ = ast_new_var_dec($2, ast_int_exp(0)); }
+    | T_VAR T_IDENT '=' expression  { $$ = ast_new_var_dec($2, $4); }
     ;
 
 func_decls
@@ -141,7 +146,7 @@ func_decls
 
 func_decl
     : T_FUN T_IDENT '(' idents_list ')' var_decls compound_statement
-        { $$ = ast_new_fundec(yylineno, $2, $4, $6, $7); }
+        { $$ = ast_new_fundec($2, $4, $6, $7); }
     ;
 
 idents_list
@@ -150,8 +155,8 @@ idents_list
     ;
 
 idents
-    : T_IDENT               { $$ = ast_new_field_list(ast_new_field(yylineno, $1), NULL); }
-    | T_IDENT ',' idents    { $$ = ast_new_field_list(ast_new_field(yylineno, $1), $3); }
+    : T_IDENT               { $$ = ast_new_field_list(ast_new_field($1), NULL); }
+    | T_IDENT ',' idents    { $$ = ast_new_field_list(ast_new_field($1), $3); }
     ;
 
 compound_statement
@@ -165,27 +170,27 @@ statement_list
 
 statement
     : T_UP
-        { $$ = ast_new_up_stmt(yylineno); }
+        { $$ = ast_new_up_stmt(); }
     | T_DOWN
-        { $$ = ast_new_down_stmt(yylineno); }
+        { $$ = ast_new_down_stmt(); }
     | T_MOVETO '(' expression ',' expression ')'
-        { $$ = ast_new_move_stmt(yylineno, $3, $5); }
+        { $$ = ast_new_move_stmt($3, $5); }
     | T_READ '(' T_IDENT ')'
-        { $$ = ast_new_read_stmt(yylineno, $3); }
+        { $$ = ast_new_read_stmt($3); }
     | T_IDENT '=' expression
-        { $$ = ast_new_assign_stmt(yylineno, $1, $3); }
+        { $$ = ast_new_assign_stmt($1, $3); }
     | T_IF '(' comparison ')' compound_statement
-        { $$ = ast_new_ift_stmt(yylineno, $3, $5); }
+        { $$ = ast_new_ift_stmt($3, $5); }
     | T_IF '(' comparison ')' compound_statement T_ELSE compound_statement
-        { $$ = ast_new_ifte_stmt(yylineno, $3, $5, $7); }
+        { $$ = ast_new_ifte_stmt($3, $5, $7); }
     | T_WHILE '(' comparison ')' compound_statement
-        { $$ = ast_new_while_stmt(yylineno, $3, $5); }
+        { $$ = ast_new_while_stmt($3, $5); }
     | T_RETURN expression
-        { $$ = ast_new_return_stmt(yylineno, $2); }
+        { $$ = ast_new_return_stmt($2); }
     | T_IDENT '(' expression_list ')'
-        { $$ = ast_new_call_stmt(yylineno, $1, $3); }
+        { $$ = ast_new_call_stmt($1, $3); }
     | '{' expression_list '}'
-        { $$ = ast_new_exp_list_stmt(yylineno, $2); }
+        { $$ = ast_new_exp_list_stmt($2); }
     ;
 
 expression_list
@@ -200,28 +205,36 @@ expressions
 
 expression
     : expression T_PLUS expression
-        { $$ = ast_new_op_exp(yylineno, ast_plusOp, $1, $3); }
+        { $$ = ast_new_op_exp(ast_plusOp, $1, $3); }
     | expression T_MINUS expression
-        { $$ = ast_new_op_exp(yylineno, ast_minusOp, $1, $3); }
+        { $$ = ast_new_op_exp(ast_minusOp, $1, $3); }
     | expression T_MULTIPLY expression
-        { $$ = ast_new_op_exp(yylineno, ast_timesOp, $1, $3); }
+        { $$ = ast_new_op_exp(ast_timesOp, $1, $3); }
     | T_MINUS expression %prec T_NEG
-        { $$ = ast_new_op_exp(yylineno, ast_negOp, $2, NULL); }
+        { $$ = ast_new_op_exp(ast_negOp, $2, NULL); }
     | T_IDENT
-        { $$ = ast_new_var_exp(yylineno, $1); }
+        { $$ = ast_new_var_exp($1); }
     | T_IDENT '(' expression_list ')'
-        { $$ = ast_new_call_exp(yylineno, $1, $3); }
+        { $$ = ast_new_call_exp($1, $3); }
     | '(' expression ')'
         { $$ = $2; }
     | T_INT_LITERAL
-        { $$ = ast_int_exp(yylineno, $1); }
+        { $$ = ast_int_exp($1); }
     ;
 
 comparison
     : expression T_EQ expression
-        { $$ = ast_new_op_exp(yylineno, ast_EQ, $1, $3); }
+        { $$ = ast_new_op_exp(ast_EQ, $1, $3); }
+    | expression T_NEQ expression
+        { $$ = ast_new_op_exp(ast_NEQ, $1, $3); }
     | expression T_LT expression
-        { $$ = ast_new_op_exp(yylineno, ast_LT, $1, $3); }
+        { $$ = ast_new_op_exp(ast_LT, $1, $3); }
+    | expression T_LEQ expression
+        { $$ = ast_new_op_exp(ast_LEQ, $1, $3); }
+    | expression T_GT expression
+        { $$ = ast_new_op_exp(ast_GT, $1, $3); }
+    | expression T_GEQ expression
+        { $$ = ast_new_op_exp(ast_GEQ, $1, $3); }
     ;
 %%
 

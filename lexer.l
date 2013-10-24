@@ -64,7 +64,11 @@ ident       [a-zA-Z][a-zA-Z0-9\_\']*
 "return"    { return T_RETURN; }
 
 "=="        { return T_EQ; }
+"!="        { return T_NEQ; }
+"<="        { return T_LEQ; }
 "<"         { return T_LT; }
+">="        { return T_GEQ; }
+">"         { return T_GT; }
 "+"         { return T_PLUS; }
 "-"         { return T_MINUS; }
 "*"         { return T_MULTIPLY; }

@@ -184,9 +184,10 @@ trans_func_def_list(struct ast_fun_dec_list *list)
 
     struct ast_fun_dec_list *p,
             *q;
+    log_info("trans_func_def_list() starts");
 
     /**
-     * Check for duplicate definitions
+     * Pass 1: check for duplicate definitions
      */
     for (p = list; p; p = p->tail) {
         for (q = p->tail; q; q = q->tail) {
@@ -197,8 +198,13 @@ trans_func_def_list(struct ast_fun_dec_list *list)
         }
     }
 
-    log_info("Finished checking");
+    log_info("trans_func_def_list() pass 1 finished");
 
+    /**
+     * Pass 2: insert the symbol table entry for functions to the symbol table
+     *
+     * Only name and the number of parameters are filled.
+     */
     for (p = list; p; p = p->tail) {
         s_enter(_fenv, p->head->name,
                 env_new_fun(p->head->name,
@@ -207,8 +213,9 @@ trans_func_def_list(struct ast_fun_dec_list *list)
                  s_name(p->head->name), count_fieldList(p->head->params));
     }
 
-    log_info("Finished adding symbol table entries");
-
+    /**
+     * Pass 3: parse the function body and fill the address in the symbol table
+     */
     for (p = list; p; p = p->tail) {
         struct ast_field_list *params;
         int             offset = -count_fieldList(p->head->params) - 1;
@@ -325,6 +332,47 @@ trans_ast_assignStmt(struct ast_stmt *stmt)
     }
 }
 
+
+static struct ast_stmt*
+transform_iftStmt(struct ast_stmt *stmt)
+{
+    assert(stmt && stmt->kind == ast_iftStmt);
+    struct ast_exp *test = stmt->u.ift.test;
+    struct ast_stmt_list *then = stmt->u.ift.then;
+    struct ast_exp *left = stmt->u.ift.test->u.op.left;
+    struct ast_exp *right = stmt->u.ift.test->u.op.right;
+    struct ast_exp *test1, *test2;
+
+    switch(stmt->u.ift.test->u.op.oper) {
+    case ast_EQ:
+    case ast_LT:
+        return stmt;
+
+    case ast_NEQ:
+        test->u.op.oper = ast_EQ;
+        return ast_new_ifte_stmt(test, NULL, then);
+
+    case ast_GT:
+        stmt->u.ift.test = ast_new_op_exp(ast_LT, right, left);
+        return stmt;
+
+    case ast_LEQ:
+        test1 = ast_new_op_exp(ast_LT, left, right);
+        test2 = ast_new_op_exp(ast_EQ, left, right);
+        return ast_new_ifte_stmt(test1, then, ast_new_stmt_list(ast_new_ifte_stmt(test2, then, NULL), NULL));
+
+    case ast_GEQ:
+        stmt->u.ift.test = ast_new_op_exp(ast_LEQ, right, left);
+        return transform_iftStmt(stmt);
+
+    default:
+        panic();
+    }
+    sentinel("Should not reach");
+error:
+    return NULL;
+}
+
 static void
 trans_ast_iftStmt(struct ast_stmt *stmt)
 {
@@ -336,11 +384,20 @@ trans_ast_iftStmt(struct ast_stmt *stmt)
         panic();
     }
 
+    struct ast_stmt *s = transform_iftStmt(stmt);
+    if (s != stmt) {
+        trans_stmt(s);
+        return;
+    }
+
+    struct ast_exp *left = stmt->u.ift.test->u.op.left;
+    struct ast_exp *right = stmt->u.ift.test->u.op.right;
+
     switch (stmt->u.ift.test->u.op.oper) {
     case ast_EQ:
     case ast_LT:
-        trans_exp(stmt->u.ift.test->u.op.left);
-        trans_exp(stmt->u.ift.test->u.op.right);
+        trans_exp(left);
+        trans_exp(right);
         break;
 
     default:
@@ -377,10 +434,59 @@ trans_ast_iftStmt(struct ast_stmt *stmt)
     backpatch(j_end, l_end);
 }
 
+static struct ast_stmt*
+transform_ifteStmt(struct ast_stmt *stmt)
+{
+    assert(stmt && stmt->kind == ast_ifteStmt);
+    struct ast_exp *test = stmt->u.ifte.test;
+    struct ast_stmt_list *then = stmt->u.ifte.then;
+    struct ast_stmt_list *elsee = stmt->u.ifte.elsee;
+    struct ast_exp *left = stmt->u.ifte.test->u.op.left;
+    struct ast_exp *right = stmt->u.ifte.test->u.op.right;
+    struct ast_exp *test1, *test2;
+
+    switch(stmt->u.ifte.test->u.op.oper) {
+    case ast_EQ:
+    case ast_LT:
+        return stmt;
+
+    case ast_NEQ:
+        test->u.op.oper = ast_EQ;
+        return ast_new_ifte_stmt(test, elsee, then);
+
+    case ast_GT:
+        stmt->u.ifte.test = ast_new_op_exp(ast_LT, right, left);
+        return stmt;
+
+    case ast_LEQ:
+        test1 = ast_new_op_exp(ast_LT, left, right);
+        test2 = ast_new_op_exp(ast_EQ, left, right);
+        return ast_new_ifte_stmt(test1, then, ast_new_stmt_list(ast_new_ifte_stmt(test2, then, elsee), NULL));
+
+    case ast_GEQ:
+        stmt->u.ifte.test = ast_new_op_exp(ast_LEQ, right, left);
+        return transform_ifteStmt(stmt);
+
+    default:
+        panic();
+    }
+    sentinel("Should not reach");
+error:
+    return NULL;
+}
+
+
+
 static void
 trans_ast_ifteStmt(struct ast_stmt *stmt)
 {
     assert(stmt && stmt->kind == ast_ifteStmt);
+
+    struct ast_stmt *s = transform_ifteStmt(stmt);
+    if (s != stmt) {
+        trans_stmt(s);
+        return;
+    }
 
     if (stmt->u.ifte.test->kind != ast_opExp ||
             stmt->u.ifte.test->u.op.oper < ast_EQ) {
@@ -527,7 +633,7 @@ trans_ast_callStmt(struct ast_stmt *stmt)
     gen_Loadi(0);
     trans_exp_list(stmt->u.call.args);
 
-    if (p->index != -1) {
+    if (p->index != 0) {
         gen_Jsr(p->index);
     } else {
         int i = get_next_code_index();
@@ -619,7 +725,6 @@ trans_int_exp(struct ast_exp *exp)
 static void
 trans_call_exp(struct ast_exp *exp)
 {
-    int             i;
     assert(exp && exp->kind == ast_callExp);
     struct env_entry *p = s_find(_fenv, exp->u.call.func);
 
@@ -636,10 +741,10 @@ trans_call_exp(struct ast_exp *exp)
     gen_Loadi(0);
     trans_exp_list(exp->u.call.args);
 
-    if (p->index != -1) {
+    if (p->index != 0) {
         gen_Jsr(p->index);
     } else {
-        i = get_next_code_index();
+        int i = get_next_code_index();
         gen_Jsr(0);
         struct patch   *patch = malloc(sizeof(*patch));
         check_mem(patch);

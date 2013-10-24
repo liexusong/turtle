@@ -1,4 +1,4 @@
-CC=gcc
+CC=clang
 CFLAGS=-g -O3 -std=gnu99
 CLFAGS_WARNING=-Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wstrict-prototypes -Wmissing-prototypes#-Wconversion
 LDFLAGS=-lfl

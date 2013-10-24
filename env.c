@@ -49,7 +49,7 @@ env_new_fun(struct s_symbol *sym, int count_params)
     e->kind = env_funEntry;
     e->sym = sym;
     e->u.func.count_params = count_params;
-    e->index = -1;
+    e->index = 0;
     return e;
 error:
     return NULL;
