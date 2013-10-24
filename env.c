@@ -51,12 +51,9 @@ void
 env_set_addr(struct table *t, struct s_symbol *sym, int addr)
 {
     struct env_entry *entry = s_find(t, sym);
-    if (entry == NULL) {
-        log_err("Trying to set a symbol that does not exits");
-    }
+    check(entry, "Trying to set a symbol that does not exits");
 
     entry->index = addr;
-
     return;
 
   error:

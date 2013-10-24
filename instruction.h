@@ -57,7 +57,7 @@ void gen_Rts_Opt(void);
 
 void backpatch(int i, int addr);
 
-int get_next_code_index();
+int get_next_code_index(void);
 
 void gen_debug(void);
 

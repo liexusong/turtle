@@ -5,6 +5,8 @@
 #include "lexer.h"
 #include "dbg.h"
 #include <unistd.h>
+#include <getopt.h>
+#include "global.h"
 
 FILE           *fout;
 int             sflag = 0;
@@ -25,7 +27,6 @@ int
 main(int argc, char *argv[])
 {
     int             c;
-    char           *oopt = NULL;
     fout = stdout;
     while ((c = getopt(argc, argv, "so:d")) != -1) {
         switch (c) {
@@ -39,7 +40,6 @@ main(int argc, char *argv[])
             check(fout, "Cannot open the file %s for writing", optarg);
 
             printf("Output to %s\n", optarg);
-            oopt = optarg;
             break;
 
         case 'd':

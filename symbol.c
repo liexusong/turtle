@@ -35,7 +35,7 @@ hash(char *s0)
     unsigned int    h = 0;
     char           *s;
     for (s = s0; *s; ++s) {
-        h = h * 65599 + *s;
+        h = h * 65599 + (unsigned int)*s;
     }
     return h;
 }

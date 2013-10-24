@@ -4,6 +4,10 @@
 
 #define TBL_SIZE 109
 
+static struct binder  *binder_new_binder(void *key, void *value,
+                                         struct binder *next,
+                                         void *prevtop);
+
 struct table {
     struct binder  *table[TBL_SIZE];
     void           *top;
@@ -16,7 +20,7 @@ struct binder {
     void           *prevtop;
 };
 
-struct binder  *
+static struct binder  *
 binder_new_binder(void *key, void *value, struct binder *next,
                   void *prevtop)
 {
@@ -57,7 +61,7 @@ table_insert(struct table *t, void *key, void *value)
 {
     check(t && key, "NULL pointer...");
     int             index;
-    index = ((unsigned) key) % TBL_SIZE;
+    index = ((uintptr_t) key) % TBL_SIZE;
     t->table[index] =
         binder_new_binder(key, value, t->table[index], t->top);
     t->top = key;
@@ -74,7 +78,7 @@ table_find(struct table *t, void *key)
     int             index;
     struct binder  *b;
 
-    index = ((unsigned) key) % TBL_SIZE;
+    index = ((uintptr_t) key) % TBL_SIZE;
     for (b = t->table[index]; b; b = b->next) {
         if (b->key == &marksym) {
             return NULL;
@@ -100,7 +104,7 @@ table_pop(struct table *t)
     k = t->top;
     check(k, "Something is wrong...");
 
-    index = ((unsigned) k) % TBL_SIZE;
+    index = ((uintptr_t) k) % TBL_SIZE;
     b = t->table[index];
     t->table[index] = b->next;
     t->top = b->prevtop;

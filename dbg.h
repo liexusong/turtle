@@ -41,7 +41,7 @@
 #include <stdarg.h>
 
 void dbg_set_log(FILE *log_file);
-FILE *dbg_get_log();
+FILE *dbg_get_log(void);
 
 #ifdef NDEBUG
 #define debug(M, ...)

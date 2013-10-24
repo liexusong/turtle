@@ -13,7 +13,7 @@
 #include "parser.h"
 
 void lyyerror(YYLTYPE t, char *s, ...);
-void yyerror(char *s, ...);
+void yyerror(const char *s, ...);
 
 void panic(void);
 

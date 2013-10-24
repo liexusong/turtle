@@ -44,7 +44,7 @@ dbg_set_log(FILE * log_file)
 
 
 FILE           *
-dbg_get_log()
+dbg_get_log(void)
 {
     return LOG_FILE != NULL ? LOG_FILE : stderr;
 }
