@@ -6,23 +6,23 @@ void
 do_translate(struct ast_node *node)
 {
     switch (node->type) {
-        case N_PROG:
-            translateGVDefs(node->child[1]);
-            translateFuncDefs(node->child[2]);
-            translateBody(node->child[3]);
-            break;
-        case N_VAR_DEF:
-            break;
-        case N_FUNC_DEF:
-            break;
-        case N_STMT:
-            break;
-        case N_EXPR:
-            break;
-        case N_COMP:
-            break;
-        case N_IDENT:
-            break;
+    case N_PROG:
+        translateGVDefs(node->child[1]);
+        translateFuncDefs(node->child[2]);
+        translateBody(node->child[3]);
+        break;
+    case N_VAR_DEF:
+        break;
+    case N_FUNC_DEF:
+        break;
+    case N_STMT:
+        break;
+    case N_EXPR:
+        break;
+    case N_COMP:
+        break;
+    case N_IDENT:
+        break;
     }
 }
 
@@ -70,10 +70,10 @@ void
 translate_statement(struct ast_node *node)
 {
     switch (node->stmt_expr_type->stmt_type) {
-        case STMT_UP:
-            break;
-        case STMT_DOWN:
-            break;
+    case STMT_UP:
+        break;
+    case STMT_DOWN:
+        break;
     }
 }
 
@@ -91,5 +91,3 @@ gen_Loadi(int v)
     PushI(v);
     return virtual_p;
 }
-
-

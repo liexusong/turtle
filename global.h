@@ -15,6 +15,8 @@
 void lyyerror(YYLTYPE t, char *s, ...);
 void yyerror(char *s, ...);
 
+void panic(void);
+
 extern int sflag;
 extern int dflag;
 extern FILE *fout;

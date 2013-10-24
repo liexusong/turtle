@@ -9,6 +9,7 @@
 %output "parser.c"
 %defines "parser.h"
 %locations
+%define parse.error verbose
 
 %union{
     struct ast_program *a_program;
@@ -149,9 +150,9 @@ statement
     | T_IDENT '=' expression
         { $$ = ast_new_assign_stmt(TODO_NUM, $1, $3); }
     | T_IF '(' comparison ')' compound_statement
-        { $$ = ast_new_if_stmt(TODO_NUM, $3, $5, NULL); }
+        { $$ = ast_new_ift_stmt(TODO_NUM, $3, $5); }
     | T_IF '(' comparison ')' compound_statement T_ELSE compound_statement
-        { $$ = ast_new_if_stmt(TODO_NUM, $3, $5, $7); }
+        { $$ = ast_new_ifte_stmt(TODO_NUM, $3, $5, $7); }
     | T_WHILE '(' comparison ')' compound_statement
         { $$ = ast_new_while_stmt(TODO_NUM, $3, $5); }
     | T_RETURN expression

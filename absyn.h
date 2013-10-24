@@ -80,7 +80,8 @@ struct ast_stmt {
         ast_moveStmt,
         ast_readStmt,
         ast_assignStmt,
-        ast_ifStmt,
+        ast_iftStmt,
+        ast_ifteStmt,
         ast_whileStmt,
         ast_returnStmt,
         ast_callStmt,
@@ -104,8 +105,12 @@ struct ast_stmt {
         struct {
             struct ast_exp *test;
             struct ast_stmt_list *then;
+        } ift;
+        struct {
+            struct ast_exp *test;
+            struct ast_stmt_list *then;
             struct ast_stmt_list *elsee;
-        } iff;
+        } ifte;
         struct {
             struct ast_exp *test;
             struct ast_stmt_list *body;
@@ -158,7 +163,8 @@ struct ast_stmt *ast_new_down_stmt(ast_pos pos);
 struct ast_stmt *ast_new_move_stmt(ast_pos pos, struct ast_exp *exp1, struct ast_exp *exp2);
 struct ast_stmt *ast_new_read_stmt(ast_pos pos, struct s_symbol *var);
 struct ast_stmt *ast_new_assign_stmt(ast_pos pos, struct s_symbol *var, struct ast_exp *exp);
-struct ast_stmt *ast_new_if_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *then, struct ast_stmt_list *elsee);
+struct ast_stmt *ast_new_ift_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *then);
+struct ast_stmt *ast_new_ifte_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *then, struct ast_stmt_list *elsee);
 struct ast_stmt *ast_new_while_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *body);
 struct ast_stmt *ast_new_return_stmt(ast_pos pos, struct ast_exp *exp);
 struct ast_stmt *ast_new_call_stmt(ast_pos pos, struct s_symbol *func, struct ast_exp_list *args);

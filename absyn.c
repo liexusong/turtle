@@ -5,8 +5,10 @@
 #include "lexer.h"
 
 struct ast_program *
-ast_new_program(char *program_name, struct ast_var_dec_list *global_var_def_list,
-          struct ast_fun_dec_list *func_def_list, struct ast_stmt_list *body)
+ast_new_program(char *program_name,
+                struct ast_var_dec_list *global_var_def_list,
+                struct ast_fun_dec_list *func_def_list,
+                struct ast_stmt_list *body)
 {
     struct ast_program *p = malloc(sizeof *p);
     check_mem(p);
@@ -18,7 +20,7 @@ ast_new_program(char *program_name, struct ast_var_dec_list *global_var_def_list
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -35,12 +37,13 @@ ast_new_var_dec(ast_pos pos, struct s_symbol *sym, struct ast_exp *init)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
-struct ast_var_dec_list*
-ast_new_var_dec_list(struct ast_var_dec *head, struct ast_var_dec_list *tail)
+struct ast_var_dec_list *
+ast_new_var_dec_list(struct ast_var_dec *head,
+                     struct ast_var_dec_list *tail)
 {
     struct ast_var_dec_list *p = malloc(sizeof *p);
     check_mem(p);
@@ -50,13 +53,14 @@ ast_new_var_dec_list(struct ast_var_dec *head, struct ast_var_dec_list *tail)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
 struct ast_fun_dec *
-ast_new_fundec(ast_pos pos, struct s_symbol *name, struct ast_field_list *params,
-               struct ast_var_dec_list *var, struct ast_stmt_list *body)
+ast_new_fundec(ast_pos pos, struct s_symbol *name,
+               struct ast_field_list *params, struct ast_var_dec_list *var,
+               struct ast_stmt_list *body)
 {
     struct ast_fun_dec *p = malloc(sizeof *p);
     check_mem(p);
@@ -69,12 +73,13 @@ ast_new_fundec(ast_pos pos, struct s_symbol *name, struct ast_field_list *params
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
 struct ast_fun_dec_list *
-ast_new_fundec_list(struct ast_fun_dec *head, struct ast_fun_dec_list *tail)
+ast_new_fundec_list(struct ast_fun_dec *head,
+                    struct ast_fun_dec_list *tail)
 {
     struct ast_fun_dec_list *p = malloc(sizeof *p);
     check_mem(p);
@@ -84,7 +89,7 @@ ast_new_fundec_list(struct ast_fun_dec *head, struct ast_fun_dec_list *tail)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -100,7 +105,7 @@ ast_new_var_exp(ast_pos pos, struct s_symbol *var)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -116,12 +121,13 @@ ast_int_exp(ast_pos pos, int i)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
 struct ast_exp *
-ast_new_call_exp(ast_pos pos, struct s_symbol *func, struct ast_exp_list *args)
+ast_new_call_exp(ast_pos pos, struct s_symbol *func,
+                 struct ast_exp_list *args)
 {
     struct ast_exp *p = malloc(sizeof *p);
     check_mem(p);
@@ -133,12 +139,13 @@ ast_new_call_exp(ast_pos pos, struct s_symbol *func, struct ast_exp_list *args)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
 struct ast_exp *
-ast_new_op_exp(ast_pos pos, enum ast_oper oper, struct ast_exp *left, struct ast_exp *right)
+ast_new_op_exp(ast_pos pos, enum ast_oper oper, struct ast_exp *left,
+               struct ast_exp *right)
 {
     struct ast_exp *p = malloc(sizeof *p);
     check_mem(p);
@@ -151,7 +158,7 @@ ast_new_op_exp(ast_pos pos, enum ast_oper oper, struct ast_exp *left, struct ast
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -167,7 +174,7 @@ ast_new_up_stmt(ast_pos pos)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -182,7 +189,7 @@ ast_new_down_stmt(ast_pos pos)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -200,7 +207,7 @@ ast_new_move_stmt(ast_pos pos, struct ast_exp *exp1, struct ast_exp *exp2)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -215,7 +222,7 @@ ast_new_read_stmt(ast_pos pos, struct s_symbol *var)
     p->u.read.var = var;
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -232,30 +239,49 @@ ast_new_assign_stmt(ast_pos pos, struct s_symbol *var, struct ast_exp *exp)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
 struct ast_stmt *
-ast_new_if_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *then, struct ast_stmt_list *elsee)
+ast_new_ift_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *then)
 {
     struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
 
-    p->kind = ast_ifStmt;
+    p->kind = ast_iftStmt;
     p->pos = pos;
-    p->u.iff.test = test;
-    p->u.iff.then = then;
-    p->u.iff.elsee = elsee;
+    p->u.ift.test = test;
+    p->u.ift.then = then;
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
 struct ast_stmt *
-ast_new_while_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *body)
+ast_new_ifte_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *then,
+                  struct ast_stmt_list *elsee)
+{
+    struct ast_stmt *p = malloc(sizeof *p);
+    check_mem(p);
+
+    p->kind = ast_ifteStmt;
+    p->pos = pos;
+    p->u.ifte.test = test;
+    p->u.ifte.then = then;
+    p->u.ifte.elsee = elsee;
+
+    return p;
+
+  error:
+    return NULL;
+}
+
+struct ast_stmt *
+ast_new_while_stmt(ast_pos pos, struct ast_exp *test,
+                   struct ast_stmt_list *body)
 {
     struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
@@ -267,7 +293,7 @@ ast_new_while_stmt(ast_pos pos, struct ast_exp *test, struct ast_stmt_list *body
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -283,12 +309,13 @@ ast_new_return_stmt(ast_pos pos, struct ast_exp *exp)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
 struct ast_stmt *
-ast_new_call_stmt(ast_pos pos, struct s_symbol *func, struct ast_exp_list *args)
+ast_new_call_stmt(ast_pos pos, struct s_symbol *func,
+                  struct ast_exp_list *args)
 {
     struct ast_stmt *p = malloc(sizeof *p);
     check_mem(p);
@@ -300,7 +327,7 @@ ast_new_call_stmt(ast_pos pos, struct s_symbol *func, struct ast_exp_list *args)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -311,12 +338,12 @@ ast_new_exp_list_stmt(ast_pos pos, struct ast_exp_list *list)
     check_mem(p);
 
     p->kind = ast_exp_listStmt;
-    p-> pos = pos;
+    p->pos = pos;
     p->u.seq = list;
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -331,7 +358,7 @@ ast_new_exp_list(struct ast_exp *head, struct ast_exp_list *tail)
 
     return p;
 
-error:
+  error:
     return NULL;
 
 }
@@ -347,7 +374,7 @@ ast_new_stmt_list(struct ast_stmt *head, struct ast_stmt_list *tail)
 
     return p;
 
-error:
+  error:
     return NULL;
 
 }
@@ -363,7 +390,7 @@ ast_new_field(ast_pos pos, struct s_symbol *name)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
 
@@ -378,7 +405,6 @@ ast_new_field_list(struct ast_field *head, struct ast_field_list *tail)
 
     return p;
 
-error:
+  error:
     return NULL;
 }
-

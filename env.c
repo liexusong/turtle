@@ -14,7 +14,7 @@ env_new_var(struct s_symbol *sym, enum env_var_scope scope, int index)
 
     return e;
 
-error:
+  error:
     return NULL;
 }
 
@@ -31,17 +31,17 @@ env_new_fun(struct s_symbol *sym, int count_params)
 
     return e;
 
-error:
+  error:
     return NULL;
 }
 
-struct table *
+struct table   *
 env_base_venv(void)
 {
     return s_new_empty();
 }
 
-struct table *
+struct table   *
 env_base_fenv(void)
 {
     return s_new_empty();
@@ -59,6 +59,6 @@ env_set_addr(struct table *t, struct s_symbol *sym, int addr)
 
     return;
 
-error:
+  error:
     return;
 }

@@ -5,21 +5,22 @@
 #define TBL_SIZE 109
 
 struct table {
-    struct binder *table[TBL_SIZE];
-    void *top;
+    struct binder  *table[TBL_SIZE];
+    void           *top;
 };
 
 struct binder {
-    void *key;
-    void *value;
-    struct binder *next;
-    void *prevtop;
+    void           *key;
+    void           *value;
+    struct binder  *next;
+    void           *prevtop;
 };
 
-struct binder *
-binder_new_binder(void *key, void *value, struct binder *next, void *prevtop)
+struct binder  *
+binder_new_binder(void *key, void *value, struct binder *next,
+                  void *prevtop)
 {
-    struct binder *b = malloc(sizeof *b);
+    struct binder  *b = malloc(sizeof *b);
     check_mem(b);
 
     b->key = key;
@@ -28,27 +29,26 @@ binder_new_binder(void *key, void *value, struct binder *next, void *prevtop)
     b->prevtop = prevtop;
     return b;
 
-error:
+  error:
     return NULL;
 }
 
-struct table*
+struct table   *
 table_new_empty(void)
 {
-    struct table *t = malloc(sizeof *t);
+    struct table   *t = malloc(sizeof *t);
     check_mem(t);
 
     t->top = NULL;
 
-    int i;
-    for (i = 0; i < TBL_SIZE; ++i)
-    {
+    int             i;
+    for (i = 0; i < TBL_SIZE; ++i) {
         t->table[i] = NULL;
     }
 
     return t;
 
-error:
+  error:
     return NULL;
 }
 
@@ -56,26 +56,26 @@ void
 table_insert(struct table *t, void *key, void *value)
 {
     check(t && key, "NULL pointer...");
-    int index;
+    int             index;
     index = ((unsigned) key) % TBL_SIZE;
-    t->table[index] = binder_new_binder(key, value, t->table[index], t->top);
+    t->table[index] =
+        binder_new_binder(key, value, t->table[index], t->top);
     t->top = key;
 
-error:
+  error:
     return;
 }
 
-void *
+void           *
 table_find(struct table *t, void *key)
 {
     check(t && key, "NULL pointer...");
 
-    int index;
-    struct binder *b;
+    int             index;
+    struct binder  *b;
 
     index = ((unsigned) key) % TBL_SIZE;
-    for (b = t->table[index]; b; b = b->next)
-    {
+    for (b = t->table[index]; b; b = b->next) {
         if (b->key == &marksym) {
             return NULL;
         }
@@ -84,29 +84,28 @@ table_find(struct table *t, void *key)
         }
     }
 
-error:
+  error:
     return NULL;
 }
 
-void *
+void           *
 table_pop(struct table *t)
 {
     check(t, "NULL pointer...");
 
-    void *k;
-    struct binder *b;
-    int index;
+    void           *k;
+    struct binder  *b;
+    int             index;
 
     k = t->top;
     check(k, "Something is wrong...");
 
-    index = ((unsigned)k) % TBL_SIZE;
+    index = ((unsigned) k) % TBL_SIZE;
     b = t->table[index];
     t->table[index] = b->next;
     t->top = b->prevtop;
     return b->key;
 
-error:
+  error:
     return NULL;
 }
-
