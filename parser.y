@@ -3,7 +3,6 @@
 #include "global.h"
 #include "semant.h"
 #include "lexer.h"
-#define TODO_NUM 0
 %}
 
 %output "parser.c"
@@ -105,8 +104,8 @@ var_decls
 
 var_decl
     : T_VAR T_IDENT
-        { $$ = ast_new_var_dec(TODO_NUM, $2, ast_int_exp(TODO_NUM, 0)); }
-    | T_VAR T_IDENT '=' expression  { $$ = ast_new_var_dec(TODO_NUM, $2, $4); }
+        { $$ = ast_new_var_dec(yylineno, $2, ast_int_exp(yylineno, 0)); }
+    | T_VAR T_IDENT '=' expression  { $$ = ast_new_var_dec(yylineno, $2, $4); }
     ;
 
 func_decls
@@ -116,7 +115,7 @@ func_decls
 
 func_decl
     : T_FUN T_IDENT '(' idents_list ')' var_decls compound_statement
-        { $$ = ast_new_fundec(TODO_NUM, $2, $4, $6, $7); }
+        { $$ = ast_new_fundec(yylineno, $2, $4, $6, $7); }
     ;
 
 idents_list
@@ -125,8 +124,8 @@ idents_list
     ;
 
 idents
-    : T_IDENT               { $$ = ast_new_field_list(ast_new_field(TODO_NUM, $1), NULL); }
-    | T_IDENT ',' idents    { $$ = ast_new_field_list(ast_new_field(TODO_NUM, $1), $3); }
+    : T_IDENT               { $$ = ast_new_field_list(ast_new_field(yylineno, $1), NULL); }
+    | T_IDENT ',' idents    { $$ = ast_new_field_list(ast_new_field(yylineno, $1), $3); }
     ;
 
 compound_statement
@@ -140,27 +139,27 @@ statement_list
 
 statement
     : T_UP
-        { $$ = ast_new_up_stmt(TODO_NUM); }
+        { $$ = ast_new_up_stmt(yylineno); }
     | T_DOWN
-        { $$ = ast_new_down_stmt(TODO_NUM); }
+        { $$ = ast_new_down_stmt(yylineno); }
     | T_MOVETO '(' expression ',' expression ')'
-        { $$ = ast_new_move_stmt(TODO_NUM, $3, $5); }
+        { $$ = ast_new_move_stmt(yylineno, $3, $5); }
     | T_READ '(' T_IDENT ')'
-        { $$ = ast_new_read_stmt(TODO_NUM, $3); }
+        { $$ = ast_new_read_stmt(yylineno, $3); }
     | T_IDENT '=' expression
-        { $$ = ast_new_assign_stmt(TODO_NUM, $1, $3); }
+        { $$ = ast_new_assign_stmt(yylineno, $1, $3); }
     | T_IF '(' comparison ')' compound_statement
-        { $$ = ast_new_ift_stmt(TODO_NUM, $3, $5); }
+        { $$ = ast_new_ift_stmt(yylineno, $3, $5); }
     | T_IF '(' comparison ')' compound_statement T_ELSE compound_statement
-        { $$ = ast_new_ifte_stmt(TODO_NUM, $3, $5, $7); }
+        { $$ = ast_new_ifte_stmt(yylineno, $3, $5, $7); }
     | T_WHILE '(' comparison ')' compound_statement
-        { $$ = ast_new_while_stmt(TODO_NUM, $3, $5); }
+        { $$ = ast_new_while_stmt(yylineno, $3, $5); }
     | T_RETURN expression
-        { $$ = ast_new_return_stmt(TODO_NUM, $2); }
+        { $$ = ast_new_return_stmt(yylineno, $2); }
     | T_IDENT '(' expression_list ')'
-        { $$ = ast_new_call_stmt(TODO_NUM, $1, $3); }
+        { $$ = ast_new_call_stmt(yylineno, $1, $3); }
     | '{' expression_list '}'
-        { $$ = ast_new_exp_list_stmt(TODO_NUM, $2); }
+        { $$ = ast_new_exp_list_stmt(yylineno, $2); }
     ;
 
 expression_list
@@ -175,28 +174,28 @@ expressions
 
 expression
     : expression T_PLUS expression
-        { $$ = ast_new_op_exp(TODO_NUM, ast_plusOp, $1, $3); }
+        { $$ = ast_new_op_exp(yylineno, ast_plusOp, $1, $3); }
     | expression T_MINUS expression
-        { $$ = ast_new_op_exp(TODO_NUM, ast_minusOp, $1, $3); }
+        { $$ = ast_new_op_exp(yylineno, ast_minusOp, $1, $3); }
     | expression T_MULTIPLY expression
-        { $$ = ast_new_op_exp(TODO_NUM, ast_timesOp, $1, $3); }
+        { $$ = ast_new_op_exp(yylineno, ast_timesOp, $1, $3); }
     | T_MINUS expression %prec T_NEG
-        { $$ = ast_new_op_exp(TODO_NUM, ast_negOp, $2, NULL); }
+        { $$ = ast_new_op_exp(yylineno, ast_negOp, $2, NULL); }
     | T_IDENT
-        { $$ = ast_new_var_exp(TODO_NUM, $1); }
+        { $$ = ast_new_var_exp(yylineno, $1); }
     | T_IDENT '(' expression_list ')'
-        { $$ = ast_new_call_exp(TODO_NUM, $1, $3); }
+        { $$ = ast_new_call_exp(yylineno, $1, $3); }
     | '(' expression ')'
         { $$ = $2; }
     | T_INT_LITERAL
-        { $$ = ast_int_exp(TODO_NUM, $1); }
+        { $$ = ast_int_exp(yylineno, $1); }
     ;
 
 comparison
     : expression T_EQ expression
-        { $$ = ast_new_op_exp(TODO_NUM, ast_EQ, $1, $3); }
+        { $$ = ast_new_op_exp(yylineno, ast_EQ, $1, $3); }
     | expression T_LT expression
-        { $$ = ast_new_op_exp(TODO_NUM, ast_LT, $1, $3); }
+        { $$ = ast_new_op_exp(yylineno, ast_LT, $1, $3); }
     ;
 %%
 
