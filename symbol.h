@@ -3,7 +3,7 @@
 
 struct s_symbol;
 
-struct s_symbol* s_new_symbol(char *name);
+struct s_symbol *s_new_symbol(char *name);
 
 char *s_name(struct s_symbol *sym);
 

@@ -22,6 +22,7 @@ static int
 two_complement(int i)
 {
     assert(i <= 0x7f);
+
     if (i < 0) {
         return i + 0x100;
     } else {
@@ -33,101 +34,131 @@ void
 gen_debug(void)
 {
     printf("Total instructions: %d\n", next_code_index);
+
     for (int i = 0; i < next_code_index; ++i) {
         if (fout == stdout || dflag) {
             fprintf(fout, "%d  ", i);
         }
+
         switch (instructions[i].kind) {
         case I_Halt:
             fprintf(fout, "Halt\n");
             break;
+
         case I_Up:
             fprintf(fout, "Up\n");
             break;
+
         case I_Down:
             fprintf(fout, "Down\n");
             break;
+
         case I_Move:
             fprintf(fout, "Move\n");
             break;
+
         case I_Add:
             fprintf(fout, "Add\n");
             break;
+
         case I_Sub:
             fprintf(fout, "Sub\n");
             break;
+
         case I_Neg:
             fprintf(fout, "Neg\n");
             break;
+
         case I_Mul:
             fprintf(fout, "Mul\n");
             break;
+
         case I_Test:
             fprintf(fout, "Test\n");
             break;
+
         case I_Rts:
             fprintf(fout, "Rts\n");
             break;
+
         case I_Load_GP:
             if (instructions[i].op >= 0) {
                 fprintf(fout, "Load %d GP\n", instructions[i].op);
             } else {
                 fprintf(fout, "Load (%d) GP\n", instructions[i].op);
             }
+
             break;
+
         case I_Load_FP:
             if (instructions[i].op >= 0) {
                 fprintf(fout, "Load %d FP\n", instructions[i].op);
             } else {
                 fprintf(fout, "Load (%d) FP\n", instructions[i].op);
             }
+
             break;
+
         case I_Store_GP:
             if (instructions[i].op >= 0) {
                 fprintf(fout, "Store %d GP\n", instructions[i].op);
             } else {
                 fprintf(fout, "Store (%d) GP\n", instructions[i].op);
             }
+
             break;
+
         case I_Store_FP:
             if (instructions[i].op >= 0) {
                 fprintf(fout, "Store %d FP\n", instructions[i].op);
             } else {
                 fprintf(fout, "Store (%d) FP\n", instructions[i].op);
             }
+
             break;
+
         case I_Read_GP:
             if (instructions[i].op >= 0) {
                 fprintf(fout, "Read %d GP\n", instructions[i].op);
             } else {
                 fprintf(fout, "Read (%d) GP\n", instructions[i].op);
             }
+
             break;
+
         case I_Read_FP:
             if (instructions[i].op >= 0) {
                 fprintf(fout, "Read %d FP\n", instructions[i].op);
             } else {
                 fprintf(fout, "Read (%d) FP\n", instructions[i].op);
             }
+
             break;
+
         case I_Jsr:
             fprintf(fout, "Jsr\n");
             break;
+
         case I_Jump:
             fprintf(fout, "Jump\n");
             break;
+
         case I_Jeq:
             fprintf(fout, "Jeq\n");
             break;
+
         case I_Jlt:
             fprintf(fout, "Jlt\n");
             break;
+
         case I_Loadi:
             fprintf(fout, "Loadi\n");
             break;
+
         case I_Pop:
             fprintf(fout, "Pop\n");
             break;
+
         case I_Word:
             fprintf(fout, "Word %d\n", instructions[i].op);
             break;
@@ -141,51 +172,74 @@ do_translate_to_binary(struct instruction *i)
     switch (i->kind) {
     case I_Halt:
         return 0x0000;
+
     case I_Up:
         return 0x0A00;
+
     case I_Down:
         return 0x0C00;
+
     case I_Move:
         return 0x0E00;
+
     case I_Add:
         return 0x1000;
+
     case I_Sub:
         return 0x1200;
+
     case I_Neg:
         return 0x2200;
+
     case I_Mul:
         return 0x1400;
+
     case I_Test:
         return 0x1600;
+
     case I_Rts:
         return 0x2800;
+
     case I_Load_GP:
         return 0x0600 + two_complement(i->op);
+
     case I_Load_FP:
         return 0x0700 + two_complement(i->op);
+
     case I_Store_GP:
         return 0x0400 + two_complement(i->op);
+
     case I_Store_FP:
         return 0x0500 + two_complement(i->op);
+
     case I_Read_GP:
         return 0x0200 + two_complement(i->op);
+
     case I_Read_FP:
         return 0x0300 + two_complement(i->op);
+
     case I_Jsr:
         return 0x6800;
+
     case I_Jump:
         return 0x7000;
+
     case I_Jeq:
         return 0x7200;
+
     case I_Jlt:
         return 0x7400;
+
     case I_Loadi:
         return 0x5600;
+
     case I_Pop:
         return 0x5E00;
+
     case I_Word:
         return i->op;
     }
+
     assert(0);
 }
 
@@ -193,11 +247,12 @@ void
 translate_to_binary(void)
 {
     printf("Total instructions: %d\n", next_code_index);
-    for (int i = 0; i < next_code_index; ++i) {
 
+    for (int i = 0; i < next_code_index; ++i) {
         if (fout == stdout) {
             fprintf(fout, "%d  ", i);
         }
+
         fprintf(fout, "%d\n", do_translate_to_binary(instructions + i));
     }
 }

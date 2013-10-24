@@ -72,6 +72,7 @@ static void
 link_func_calls(void)
 {
     struct patch   *p;
+
     for (p = _patches; p != NULL; p = p->next) {
         backpatch(p->lineno, p->fun->index);
     }
@@ -82,11 +83,13 @@ count_expList(struct ast_exp_list *list)
 {
     int             count = 0;
     struct ast_exp_list *p;
+
     for (p = list; p; p = p->tail) {
         if (p->head) {
             count += 1;
         }
     }
+
     return count;
 }
 
@@ -95,11 +98,13 @@ count_fieldList(struct ast_field_list *list)
 {
     int             count = 0;
     struct ast_field_list *p;
+
     for (p = list; p; p = p->tail) {
         if (p->head) {
             count += 1;
         }
     }
+
     return count;
 }
 
@@ -107,17 +112,18 @@ static void
 trans_global_vardecList(struct ast_var_dec_list *list)
 {
     int             offset = 1;
+
     for (; list; list = list->tail, offset += 1) {
         struct ast_var_dec *dec = list->head;
         assert(dec != NULL);
-
         struct env_entry *entry = s_find(_venv, dec->sym);
+
         if (entry != NULL) {
             log_err("Redefining %s", s_name(dec->sym));
             panic();
         }
-        trans_exp(dec->init);
 
+        trans_exp(dec->init);
         s_enter(_venv, dec->sym,
                 env_new_var(dec->sym, env_global, offset));
     }
@@ -127,17 +133,18 @@ static void
 trans_local_vardecList(struct ast_var_dec_list *list)
 {
     int             offset = 1;
+
     for (; list; list = list->tail, offset += 1) {
         struct ast_var_dec *dec = list->head;
         assert(dec != NULL);
-
         struct env_entry *entry = s_find(_venv, dec->sym);
+
         if (entry != NULL && entry->u.var.scope == env_global) {
             log_err("Redefining %s", s_name(dec->sym));
             panic();
         }
-        trans_exp(dec->init);
 
+        trans_exp(dec->init);
         s_enter(_venv, dec->sym, env_new_var(dec->sym, env_local, offset));
     }
 }
@@ -150,7 +157,8 @@ trans_func_def_list(struct ast_fun_dec_list *list)
     }
 
     struct ast_fun_dec_list *p,
-                   *q;
+            *q;
+
     /**
      * Check for duplicate definitions
      */
@@ -180,16 +188,20 @@ trans_func_def_list(struct ast_fun_dec_list *list)
         int             offset = -count_fieldList(p->head->params) - 1;
         retOffset = -count_fieldList(p->head->params) - 2;
         s_enter_scope(_venv);
+
         for (params = p->head->params; params;
-             params = params->tail, offset += 1) {
+                params = params->tail, offset += 1) {
             struct env_entry *entry = s_find(_venv, params->head->name);
+
             if (entry != NULL && entry->u.var.scope == env_local) {
                 log_err("Redefine");
                 panic();
             }
+
             s_enter(_venv, params->head->name,
                     env_new_var(params->head->name, env_local, offset));
         }
+
         int             addr = get_next_code_index();
         // TODO check this
         env_set_addr(_fenv, p->head->name, addr);
@@ -228,7 +240,6 @@ static void
 trans_ast_moveStmt(struct ast_stmt *stmt)
 {
     assert(stmt && stmt->kind == ast_moveStmt);
-
     trans_exp(stmt->u.move.exp1);
     trans_exp(stmt->u.move.exp2);
     gen_Move();
@@ -240,7 +251,7 @@ trans_ast_readStmt(struct ast_stmt *stmt)
     assert(stmt && stmt->kind == ast_readStmt);
     struct env_entry *p = s_find(_venv, stmt->u.read.var);
 
-    if (p == NULL) {
+    if (!p) {
         log_err("Cannot read to undefined variable");
         panic();
     }
@@ -249,9 +260,11 @@ trans_ast_readStmt(struct ast_stmt *stmt)
     case env_global:
         gen_Read_GP(p->index);
         break;
+
     case env_local:
         gen_Read_FP(p->index);
         break;
+
     default:
         log_err("Unkown type");
         panic();
@@ -262,14 +275,15 @@ static void
 trans_ast_assignStmt(struct ast_stmt *stmt)
 {
     assert(stmt && stmt->kind == ast_assignStmt);
-
     struct env_entry *p = s_find(_venv, stmt->u.assign.var);
-    if (p == NULL) {
+
+    if (!p) {
         log_err("Cannot assign a value to the undefined variable");
         panic();
     }
 
     trans_exp(stmt->u.assign.exp);
+
     switch (p->u.var.scope) {
     case env_global:
         gen_Store_GP(p->index);
@@ -289,53 +303,53 @@ static void
 trans_ast_iftStmt(struct ast_stmt *stmt)
 {
     assert(stmt && stmt->kind == ast_iftStmt);
+
     if (stmt->u.ift.test->kind != ast_opExp ||
-        stmt->u.ift.test->u.op.oper < ast_EQ) {
+            stmt->u.ift.test->u.op.oper < ast_EQ) {
         log_err("error");
         panic();
     }
 
     switch (stmt->u.ift.test->u.op.oper) {
-        case ast_EQ:
-        case ast_LT:
-            trans_exp(stmt->u.ift.test->u.op.left);
-            trans_exp(stmt->u.ift.test->u.op.right);
-            break;
-        default:
-            log_err("Non supported");
-            panic();
+    case ast_EQ:
+    case ast_LT:
+        trans_exp(stmt->u.ift.test->u.op.left);
+        trans_exp(stmt->u.ift.test->u.op.right);
+        break;
+
+    default:
+        log_err("Non supported");
+        panic();
     }
 
     gen_Sub();
     gen_Test();
     gen_Pop(1);
-
     int j_then = get_next_code_index();
 
     switch (stmt->u.ift.test->u.op.oper) {
-        case ast_EQ:
-            gen_Jeq(0);
-            break;
-        case ast_LT:
-            gen_Jlt(0);
-            break;
-        default:
-            log_err("Non");
-            panic();
-            break;
+    case ast_EQ:
+        gen_Jeq(0);
+        break;
+
+    case ast_LT:
+        gen_Jlt(0);
+        break;
+
+    default:
+        log_err("Non");
+        panic();
+        break;
     }
+
     int j_end = get_next_code_index();
     gen_Jump(0);
-
     int l_then = get_next_code_index();
     trans_stmt_list(stmt->u.ift.then);
-
     int l_end = get_next_code_index();
-
     backpatch(j_then, l_then);
     backpatch(j_end, l_end);
 }
-
 
 static void
 trans_ast_ifteStmt(struct ast_stmt *stmt)
@@ -343,7 +357,7 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
     assert(stmt && stmt->kind == ast_ifteStmt);
 
     if (stmt->u.ifte.test->kind != ast_opExp ||
-        stmt->u.ifte.test->u.op.oper < ast_EQ) {
+            stmt->u.ifte.test->u.op.oper < ast_EQ) {
         log_err("error");
         panic();
     }
@@ -354,6 +368,7 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
         trans_exp(stmt->u.ifte.test->u.op.left);
         trans_exp(stmt->u.ifte.test->u.op.right);
         break;
+
     default:
         log_err("Non");
         panic();
@@ -362,16 +377,17 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
     gen_Sub();
     gen_Test();
     gen_Pop(1);
-
     int j_then = get_next_code_index();
 
     switch (stmt->u.ifte.test->u.op.oper) {
     case ast_EQ:
         gen_Jeq(0);
         break;
+
     case ast_LT:
         gen_Jlt(0);
         break;
+
     default:
         log_err("Non");
         panic();
@@ -380,18 +396,13 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
 
     int j_else = get_next_code_index();
     gen_Jump(0);
-
     int l_then = get_next_code_index();
     trans_stmt_list(stmt->u.ifte.then);
-
     int j_end = get_next_code_index();
     gen_Jump(0);
-
     int l_else = get_next_code_index();
     trans_stmt_list(stmt->u.ifte.elsee);
-
     int l_end = get_next_code_index();
-
     backpatch(j_then, l_then);
     backpatch(j_else, l_else);
     backpatch(j_end, l_end);
@@ -403,52 +414,53 @@ trans_ast_whileStmt(struct ast_stmt *stmt)
     assert(stmt && stmt->kind == ast_whileStmt);
 
     if (stmt->u.whilee.test->kind != ast_opExp ||
-        stmt->u.whilee.test->u.op.oper < ast_EQ) {
+            stmt->u.whilee.test->u.op.oper < ast_EQ) {
         log_err("error");
         panic();
     }
 
     int l_test = get_next_code_index();
+
     switch (stmt->u.whilee.test->u.op.oper) {
-        case ast_EQ:
-        case ast_LT:
-            trans_exp(stmt->u.whilee.test->u.op.left);
-            trans_exp(stmt->u.whilee.test->u.op.right);
-            break;
-        default:
-            log_err("Non");
-            panic();
-            break;
+    case ast_EQ:
+    case ast_LT:
+        trans_exp(stmt->u.whilee.test->u.op.left);
+        trans_exp(stmt->u.whilee.test->u.op.right);
+        break;
+
+    default:
+        log_err("Non");
+        panic();
+        break;
     }
+
     gen_Sub();
     gen_Test();
     gen_Pop(1);
-
     int j_begin = get_next_code_index();
+
     switch (stmt->u.whilee.test->u.op.oper) {
-        case ast_EQ:
-            gen_Jeq(0);
-            break;
-        case ast_LT:
-            gen_Jlt(0);
-            break;
-        default:
-            log_err("Non");
-            panic();
-            break;
+    case ast_EQ:
+        gen_Jeq(0);
+        break;
+
+    case ast_LT:
+        gen_Jlt(0);
+        break;
+
+    default:
+        log_err("Non");
+        panic();
+        break;
     }
 
     int j_end = get_next_code_index();
     gen_Jump(0);
-
     int l_begin = get_next_code_index();
     trans_stmt_list(stmt->u.whilee.body);
-
     int j_test = get_next_code_index();
     gen_Jump(0);
-
     int l_end = get_next_code_index();
-
     backpatch(j_begin, l_begin);
     backpatch(j_end, l_end);
     backpatch(j_test, l_test);
@@ -458,10 +470,12 @@ static void
 trans_ast_returnStmt(struct ast_stmt *stmt)
 {
     assert(stmt && stmt->kind == ast_returnStmt);
+
     if (!s_in_scope()) {
         log_info("Return from the outmost scope");
         panic();
     }
+
     trans_exp(stmt->u.returnn.exp);
     assert(retOffset < 0);
     gen_Store_FP(retOffset);
@@ -473,10 +487,12 @@ trans_ast_callStmt(struct ast_stmt *stmt)
 {
     assert(stmt && stmt->kind == ast_callStmt);
     struct env_entry *p = s_find(_fenv, stmt->u.call.func);
-    if (p == NULL) {
+
+    if (!p) {
         log_err("Cannot call undefined function");
         panic();
     }
+
     if (count_expList(stmt->u.call.args) != p->u.func.count_params) {
         log_err("Mismatched number of parameters");
         panic();
@@ -490,21 +506,20 @@ trans_ast_callStmt(struct ast_stmt *stmt)
     } else {
         int i = get_next_code_index();
         gen_Jsr(0);
-
-        struct patch   *patch = malloc(sizeof *patch);
+        struct patch   *patch = malloc(sizeof(*patch));
         check_mem(patch);
         patch->lineno = i;
         patch->fun = p;
         patch->next = _patches;
         _patches = patch;
     }
+
 #ifdef SANITY
     gen_Pop(p->u.func.count_params + 1);
 #else
     gen_Pop(p->u.func.count_params);
 #endif
     return;
-
 error:
     panic();
 }
@@ -522,7 +537,7 @@ trans_stmt(struct ast_stmt *stmt)
     if (!stmt) {
         return;
     } else if (stmt->kind <= ast_exp_listStmt) {
-         (*trans_stmt_fun_list[stmt->kind])(stmt);
+        (*trans_stmt_fun_list[stmt->kind])(stmt);
     } else {
         log_err("Unkown");
         panic();
@@ -532,7 +547,7 @@ trans_stmt(struct ast_stmt *stmt)
 static void
 trans_exp_list(struct ast_exp_list *list)
 {
-    if (list == NULL) {
+    if (!list) {
         log_info("exp_list returns");
         return;
     }
@@ -542,43 +557,47 @@ trans_exp_list(struct ast_exp_list *list)
         trans_exp(list->head);
     }
 }
+
 static void trans_var_exp(struct ast_exp *exp)
 {
     assert(exp && exp->kind == ast_varExp);
-
     struct env_entry *p = s_find(_venv, exp->u.var);
-    if (p == NULL) {
+
+    if (!p) {
         log_err("Use of undefined varaible");
         panic();
     }
+
     switch (p->u.var.scope) {
-        case env_global:
-            gen_Load_GP(p->index);
-            break;
-        case env_local:
-            gen_Load_FP(p->index);
-            break;
-        default:
-            log_err("Unkown parameters");
-            panic();
+    case env_global:
+        gen_Load_GP(p->index);
+        break;
+
+    case env_local:
+        gen_Load_FP(p->index);
+        break;
+
+    default:
+        log_err("Unkown parameters");
+        panic();
     }
 }
 
 static void
-trans_int_exp(struct ast_exp *exp) {
+trans_int_exp(struct ast_exp *exp)
+{
     assert (exp && exp->kind == ast_intExp);
     gen_Loadi(exp->u.intt);
 }
-
 
 static void
 trans_call_exp(struct ast_exp *exp)
 {
     int             i;
-
     assert(exp && exp->kind == ast_callExp);
     struct env_entry *p = s_find(_fenv, exp->u.call.func);
-    if (p == NULL) {
+
+    if (!p) {
         log_err("Calling undefined function.");
         panic();
     }
@@ -590,26 +609,25 @@ trans_call_exp(struct ast_exp *exp)
 
     gen_Loadi(0);
     trans_exp_list(exp->u.call.args);
+
     if (p->index != -1) {
         gen_Jsr(p->index);
     } else {
         i = get_next_code_index();
         gen_Jsr(0);
-
-        struct patch   *patch = malloc(sizeof *patch);
+        struct patch   *patch = malloc(sizeof(*patch));
         check_mem(patch);
         patch->lineno = i;
         patch->fun = p;
         patch->next = _patches;
         _patches = patch;
     }
+
     gen_Pop(p->u.func.count_params);
     return;
-
 error:
     panic();
 }
-
 
 static void
 trans_op_exp(struct ast_exp *exp)
@@ -617,22 +635,27 @@ trans_op_exp(struct ast_exp *exp)
     assert(exp && exp->kind == ast_opExp);
     trans_exp(exp->u.op.left);
     trans_exp(exp->u.op.right);
+
     switch (exp->u.op.oper) {
-        case ast_plusOp:
-            gen_Add();
-            break;
-        case ast_minusOp:
-            gen_Sub();
-            break;
-        case ast_timesOp:
-            gen_Mul();
-            break;
-        case ast_negOp:
-            gen_Neg();
-            break;
-        default:
-            log_err("Unkown parameter");
-            panic();
+    case ast_plusOp:
+        gen_Add();
+        break;
+
+    case ast_minusOp:
+        gen_Sub();
+        break;
+
+    case ast_timesOp:
+        gen_Mul();
+        break;
+
+    case ast_negOp:
+        gen_Neg();
+        break;
+
+    default:
+        log_err("Unkown parameter");
+        panic();
     }
 }
 
@@ -642,7 +665,7 @@ trans_exp(struct ast_exp *exp)
     if (!exp) {
         return;
     } else if (exp->kind <= ast_opExp) {
-         (*trans_exp_fun_list[exp->kind])(exp);
+        (*trans_exp_fun_list[exp->kind])(exp);
     } else {
         log_err("Unkown type");
         panic();
@@ -659,25 +682,20 @@ sem_trans_prog(struct ast_program *prog)
     _venv = env_base_venv();
     _fenv = env_base_fenv();
     retOffset = 0;
-
     log_info("trans_global_vardecList() begins");
     trans_global_vardecList(prog->global_var_def_list);
     log_info("trans_global_vardecList() ends");
     int             j_jump = get_next_code_index();
     gen_Jump(0);
-
     log_info("trans_func_def_list() begins");
     trans_func_def_list(prog->func_def_list);
     log_info("trans_func_def_list() ends");
     link_func_calls();
-
     int             l_jump = get_next_code_index();
     log_info("trans_stmt_list() begins");
     trans_stmt_list(prog->body);
     log_info("trans_stmt_list() ends");
-
     backpatch(j_jump, l_jump);
     gen_Halt();
-
     return;
 }

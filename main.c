@@ -20,6 +20,7 @@ panic(void)
     } else {
         fclose(fout);
     }
+
     exit(1);
 }
 
@@ -28,6 +29,7 @@ main(int argc, char *argv[])
 {
     int             c;
     fout = stdout;
+
     while ((c = getopt(argc, argv, "so:d")) != -1) {
         switch (c) {
         case 's':
@@ -38,7 +40,6 @@ main(int argc, char *argv[])
         case 'o':
             fout = fopen(optarg, "w+");
             check(fout, "Cannot open the file %s for writing", optarg);
-
             printf("Output to %s\n", optarg);
             break;
 
@@ -51,25 +52,23 @@ main(int argc, char *argv[])
             break;
         }
     }
+
     if (optind < argc) {
         do {
             FILE           *f = fopen(argv[optind], "r");
             check(f, "Cannot open the file %s", argv[optind]);
-
             yyrestart(f);
             yyin = f;
 
             do {
                 yyparse();
-            }
-            while (!feof(yyin));
-        }
-        while (++optind < argc);
+            } while (!feof(yyin));
+        } while (++optind < argc);
     } else {
         yyparse();
     }
-    return 0;
 
-  error:
+    return 0;
+error:
     return 1;
 }

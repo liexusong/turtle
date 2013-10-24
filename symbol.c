@@ -13,15 +13,12 @@ struct s_symbol {
 static struct s_symbol *
 mksymbol(char *name, struct s_symbol *next)
 {
-    struct s_symbol *s = malloc(sizeof *s);
+    struct s_symbol *s = malloc(sizeof(*s));
     check_mem(s);
-
     s->name = name;
     s->next = next;
-
     return s;
-
-  error:
+error:
     return NULL;
 }
 
@@ -34,9 +31,11 @@ hash(char *s0)
 {
     unsigned int    h = 0;
     char           *s;
+
     for (s = s0; *s; ++s) {
-        h = h * 65599 + (unsigned int)*s;
+        h = h * 65599 + (unsigned int)(*s);
     }
+
     return h;
 }
 
@@ -46,11 +45,13 @@ s_new_symbol(char *name)
     int             index = hash(name) % SIZE;
     struct s_symbol *syms = hashtable[index];
     struct s_symbol *sym;
+
     for (sym = syms; sym; sym = sym->next) {
         if (strcmp(sym->name, name) == 0) {
             return sym;
         }
     }
+
     sym = mksymbol(name, syms);
     hashtable[index] = sym;
     return sym;
@@ -93,10 +94,11 @@ void
 s_leave_scope(struct table *t)
 {
     struct s_symbol *s;
+
     do {
         s = table_pop(t);
-    }
-    while (s != &marksym);
+    } while (s != &marksym);
+
     nested_level -= 1;
 }
 
