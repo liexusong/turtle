@@ -29,6 +29,8 @@
  *
  * This file defines the nodes in AST. It provides constructors for each type of
  * nodes.
+ *
+ * The _idea_ is taken from the tiger book.
  */
 
 #ifndef AST_H_
@@ -39,6 +41,7 @@
 
 /**
  * Please see Chapter 8 of "Flex & Bison" by John Levine
+ *
  * This is used for error reporting.
  */
 typedef YYLTYPE ast_pos;

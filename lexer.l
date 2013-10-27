@@ -73,7 +73,6 @@ ident       [a-zA-Z][a-zA-Z0-9\_\']*
 "-"         { return T_MINUS; }
 "*"         { return T_MULTIPLY; }
 
-"//".*\n    { yycolumn = 1; }
 "//".*      /* ignore comments */
 
 <<EOF>>     { yyterminate(); }

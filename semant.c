@@ -177,7 +177,7 @@ trans_global_vardecList(struct ast_var_dec_list *list)
         }
 
         trans_exp(dec->init);
-        s_enter(_venv, dec->sym,
+        s_insert(_venv, dec->sym,
                 env_new_var(dec->sym, env_global, offset));
         free(dec);
     }
@@ -229,7 +229,7 @@ trans_local_vardecList(struct ast_var_dec_list *list)
         }
 
         trans_exp(dec->init);
-        s_enter(_venv, dec->sym, env_new_var(dec->sym, env_local, offset));
+        s_insert(_venv, dec->sym, env_new_var(dec->sym, env_local, offset));
         free(dec);
     }
 
@@ -264,7 +264,7 @@ trans_func_def_list(struct ast_fun_dec_list *list)
      * Only name and the number of parameters are filled.
      */
     for (p = list; p; p = p->tail) {
-        s_enter(_fenv, p->head->name,
+        s_insert(_fenv, p->head->name,
                 env_new_fun(p->head->name,
                             count_fieldList(p->head->params)));
     }
@@ -308,7 +308,7 @@ trans_func_def_list(struct ast_fun_dec_list *list)
                 }
             }
 
-            s_enter(_venv, params->head->name,
+            s_insert(_venv, params->head->name,
                     env_new_var(params->head->name, env_local, offset));
             free(params->head);
         }
@@ -341,6 +341,7 @@ static void
 trans_ast_upStmt(struct ast_stmt *stmt)
 {
     assert(stmt && stmt->kind == ast_upStmt);
+    (void) stmt; // silent the compiler warning
     gen_Up();
 }
 
@@ -348,6 +349,7 @@ static void
 trans_ast_downStmt(struct ast_stmt *stmt)
 {
     assert(stmt && stmt->kind == ast_downStmt);
+    (void) stmt; // silent the compiler warning
     gen_Down();
 }
 

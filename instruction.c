@@ -27,29 +27,45 @@
 #include "global.h"
 #include "instruction.h"
 
-#define INSTRUCTIONS_SIZE 65535
+/**
+ * 16-bit target machine anyway...
+ */
+#define INSTRUCTIONS_SIZE (2<<16)
 
-int             next_data_index = 1;
 int             next_code_index = 0;
 
+/**
+ * Compact representation of an instruction
+ */
 struct instruction {
     enum I_instruction kind;
     int             op;
 };
 
+/**
+ * We use a static array because it is easier...
+ */
 static struct instruction instructions[INSTRUCTIONS_SIZE];
 
-
+/**
+ * @return the _number_ corresponds to @i
+ *
+ * It is up to the caller to decide how to print the number.
+ */
 static int      do_translate_to_binary(struct instruction *i);
+/**
+ * @returns the two's complement representation of @i
+ */
 static int      two_complement(int i);
-
 
 static int
 two_complement(int i)
 {
-    assert(i <= 0x7f);
-
-    if (i < 0) {
+    if (i > 0x7f) { // Won't work...
+        assert(0);
+        panic();
+        return 0; // Not reachable
+    } else if (i < 0) {
         return i + 0x100;
     } else {
         return i;
@@ -268,6 +284,7 @@ do_translate_to_binary(struct instruction *i)
 
     assert(0);
     panic();
+    return 0; // Not reachable
 }
 
 void
@@ -350,7 +367,6 @@ gen_Test(void)
 void
 gen_Rts(void)
 {
-    log_info("gen_Rts");
     instructions[next_code_index].kind = I_Rts;
     ++next_code_index;
 }
@@ -472,7 +488,6 @@ gen_Pop(int n)
 void
 backpatch(int i, int addr)
 {
-    log_info("backpatch(i = %d, addr = %d)", i, addr);
     instructions[i + 1].op = addr;
 }
 

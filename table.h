@@ -1,41 +1,43 @@
 /*-
- * Copyright (c) 2013, Meitian Huang <_@freeaddr.info>
+ * Copyright (c) 1998, Andrew W. Appel with Maia Ginsburg
  * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
  */
+
+/**
+ * Implements hash tables using a void pointer as the key and another pointer as
+ * the value.
+ *
+ * For more information, please refer to the tiger book.
+ */
+
 #ifndef HASH_H_
 #define HASH_H_
 
 struct table;
 
+/**
+ * Inserts an entry with @key and @value into the table @t
+ */
 void table_insert(struct table *t, void *key, void *value);
 
+/**
+ * @return the key associated with @key in the able @t if there is any
+ */
 void *table_find(struct table *t, void *key);
 
+/**
+ * @return the last entry in the hashtable @t
+ */
 void *table_pop(struct table *t);
 
+/**
+ * @return an empty hashtable
+ */
 struct table *table_new_empty(void);
 
+/**
+ * Releases all dynamic memory
+ */
 void table_release(void);
 
 #endif /* end of include guard: HASH_H_ */

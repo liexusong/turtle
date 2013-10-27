@@ -34,6 +34,10 @@
 #include <getopt.h>
 #include "global.h"
 
+/**
+ * Please have a look at global.h for more information
+ */
+
 FILE           *fout;
 int             sflag = 0;
 int             lflag = 0;
@@ -45,14 +49,16 @@ struct allocated_linked_list_memory {
 
 static struct allocated_linked_list_memory *first_record = NULL;
 
-void free_allocated(void)
+void
+free_allocated(void)
 {
     FREE_LIST_CONTENT(first_record);
     FREE_LIST(first_record);
     first_record = NULL;
 }
 
-void record_allocated(void *head)
+void
+record_allocated(void *head)
 {
     struct allocated_linked_list_memory *list = malloc(sizeof(*list));
     check_mem(list);
@@ -64,6 +70,10 @@ void record_allocated(void *head)
 error:
     return;
 }
+
+/*************************
+ * Starts of relevant code
+ ************************/
 
 static void
 print_help(void)
@@ -96,14 +106,14 @@ main(int argc, char *argv[])
     while ((c = getopt(argc, argv, "so:l")) != -1) {
         switch (c) {
         case 's':
-            log_info("Output assembly code only");
+            debug("Output assembly code only");
             sflag = 1;
             break;
 
         case 'o':
             fout = fopen(optarg, "w+");
             check(fout, "Cannot open the file %s for writing", optarg);
-            log_info("Output to %s", optarg);
+            debug("Output to %s", optarg);
             break;
 
         case 'l':
@@ -118,6 +128,8 @@ main(int argc, char *argv[])
     }
 
     if (optind < argc) {
+        // TODO, is there really any point to support multiple input files???
+        // Can't the user just run this compiler multiple times?
         do {
             FILE           *f = fopen(argv[optind], "r");
             check(f, "Cannot open the file %s", argv[optind]);

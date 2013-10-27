@@ -38,7 +38,14 @@
 #include "dbg.h"
 #include "parser.h"
 
+/**
+ * Standard error reporting
+ */
 void yyerror(const char *s, ...);
+
+/**
+ * Enhanced yyerror() that prints the line number and column number
+ */
 void lyyerror(YYLTYPE t, char *s, ...);
 
 /**
@@ -76,7 +83,14 @@ extern FILE *fout; // stderr or an output file
                             } \
                         } while (0)
 
+/**
+ * Should be called if some dynamic memory is allocated
+ */
 void record_allocated(void *head);
+
+/**
+ * Frees the dynamically allocated memory
+ */
 void free_allocated(void);
 
 #endif /* end of include guard: GLOBAL_H_ */

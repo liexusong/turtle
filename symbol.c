@@ -1,27 +1,6 @@
 /*-
- * Copyright (c) 2013, Meitian Huang <_@freeaddr.info>
+ * Copyright (c) 1998, Andrew W. Appel with Maia Ginsburg
  * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "global.h"
@@ -96,7 +75,7 @@ s_new_empty(void)
 }
 
 void
-s_enter(struct table *t, struct s_symbol *sym, void *value)
+s_insert(struct table *t, struct s_symbol *sym, void *value)
 {
     table_insert(t, sym, value);
 }
@@ -112,7 +91,7 @@ struct s_symbol marksym = { "<mark>", NULL };
 void
 s_enter_scope(struct table *t)
 {
-    s_enter(t, &marksym, NULL);
+    s_insert(t, &marksym, NULL);
     nested_level += 1;
 }
 
@@ -143,7 +122,6 @@ s_clear(void)
         struct s_symbol *sym;
         struct s_symbol *tmp;
         for (sym = syms; sym; sym = tmp) {
-            log_info("free(name = %s)", sym->name);
             free(sym->name);
             tmp = sym->next;
             free(sym);

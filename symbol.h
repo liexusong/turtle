@@ -1,27 +1,13 @@
 /*-
- * Copyright (c) 2013, Meitian Huang <_@freeaddr.info>
+ * Copyright (c) 1998, Andrew W. Appel with Maia Ginsburg
  * All rights reserved.
+ */
+
+/**
+ * Converts each string (char *) to a symbol, so that all the different
+ * occurrences of any given string to the same symbol.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * For more information, please refer to the tiger book.
  */
 
 #ifndef SYMBOL_H_
@@ -29,24 +15,63 @@
 
 struct s_symbol;
 
+/**
+ * @return a point to s_symbol
+ *
+ * A new s_symbol will be allocated if and only we have not seen @name so far.
+ */
 struct s_symbol *s_new_symbol(char *name);
 
+/**
+ * @return the name of the symbol as a C string
+ */
 char *s_name(struct s_symbol *sym);
 
+/**
+ * @return a new (hash)table for symbols
+ */
 struct table *s_new_empty(void);
 
-void s_enter(struct table *t, struct s_symbol *sym, void *value);
+/**
+ * Inserts an entry with @sym as key and @value into the table @t
+ *
+ * Wrapper of table_insert()
+ */
+void s_insert(struct table *t, struct s_symbol *sym, void *value);
 
+/**
+ * @return the key associated with @sym in the able @t if there is any
+ *
+ * Wrapper of table_find()
+ */
 void *s_find(struct table *t, struct s_symbol *sym);
 
+/**
+ * Stores the state of table @t so that s_leave_scope can restore the state of
+ * the table to the current one.
+ */
 void s_enter_scope(struct table *t);
 
+/**
+ * Restores table @t to the exact state when s_enter_scope() was called last
+ * time
+ */
 void s_leave_scope(struct table *t);
 
+/**
+ * @return a positive number if s_enter_scope() is called but s_leave_scope() is
+ * not called yet
+ */
 int s_in_scope(void);
 
+/**
+ * 
+ */
 extern struct s_symbol marksym;
 
+/**
+ * Frees all dynamic memory
+ */
 void s_clear(void);
 
 #endif /* end of include guard: SYMBOL_H_ */

@@ -64,6 +64,11 @@ enum I_instruction {
     I_Word,
 };
 
+/**
+ * Generates instructions
+ *
+ * Their names are already descriptive...
+ */
 void gen_Halt(void);
 void gen_Up(void);
 void gen_Down(void);
