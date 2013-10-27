@@ -55,7 +55,6 @@ ast_new_var_dec(YYLTYPE t, struct s_symbol *sym, struct ast_exp *init)
     p->pos = t;
     p->sym = sym;
     p->init = init;
-    log_info("ast_var_dec(%s)\n", s_name(sym));
     return p;
 error:
     return NULL;

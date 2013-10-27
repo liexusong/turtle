@@ -62,7 +62,7 @@ gen_debug(void)
     printf("Total instructions: %d\n", next_code_index);
 
     for (int i = 0; i < next_code_index; ++i) {
-        if (fout == stdout || dflag) {
+        if (lflag) {
             fprintf(fout, "%d  ", i);
         }
 
@@ -267,6 +267,7 @@ do_translate_to_binary(struct instruction *i)
     }
 
     assert(0);
+    panic();
 }
 
 void

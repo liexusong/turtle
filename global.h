@@ -39,14 +39,22 @@
 #include "parser.h"
 
 void lyyerror(YYLTYPE t, char *s, ...);
-void yyerror(const char *s, ...);
 
+/**
+ * Panic
+ *
+ * Closes the output file if there is any and exits the problem
+ */
 void panic(void);
 
-extern int sflag;
-extern int dflag;
-extern FILE *fout;
+extern int sflag; // -S flag
+extern int lflag; // -d flag
+extern FILE *fout; // stderr or an output file
 
+/**
+ * The following functions are used to reduce the amount of memory leak. They
+ * are not really related to this assignment.
+ */
 #define FREE_LIST_CONTENT(list) do { \
                                     typeof(list) t; \
                                     while (list != NULL) { \
@@ -66,11 +74,6 @@ extern FILE *fout;
                                 list = t; \
                             } \
                         } while (0)
-
-struct allocated_linked_list_memory {
-    void *head;
-    struct allocated_linked_list_memory *tail;
-};
 
 void record_allocated(void *head);
 void free_allocated(void);

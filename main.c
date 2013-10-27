@@ -36,7 +36,12 @@
 
 FILE           *fout;
 int             sflag = 0;
-int             dflag = 0;
+int             lflag = 0;
+
+struct allocated_linked_list_memory {
+    void *head;
+    struct allocated_linked_list_memory *tail;
+};
 
 static struct allocated_linked_list_memory *first_record = NULL;
 
@@ -60,6 +65,16 @@ error:
     return;
 }
 
+static void
+print_help(void)
+{
+    printf("Usage: turtle [options] [file]...\n"
+           "Options:\n"
+           "-o FILE\t\tFILE\n"
+           "-s\t\toutput assembly code\n"
+           "-l\t\tdisplay line numbers\n");
+}
+
 void
 panic(void)
 {
@@ -78,26 +93,27 @@ main(int argc, char *argv[])
     int             c;
     fout = stdout;
 
-    while ((c = getopt(argc, argv, "so:d")) != -1) {
+    while ((c = getopt(argc, argv, "so:l")) != -1) {
         switch (c) {
         case 's':
-            printf("Output assembly code only\n");
+            log_info("Output assembly code only");
             sflag = 1;
             break;
 
         case 'o':
             fout = fopen(optarg, "w+");
             check(fout, "Cannot open the file %s for writing", optarg);
-            printf("Output to %s\n", optarg);
+            log_info("Output to %s", optarg);
             break;
 
-        case 'd':
-            dflag = 1;
+        case 'l':
+            lflag = 1;
             break;
 
+        case 'h':
         default:
-            printf("Unknown\n");
-            break;
+            print_help();
+            return 1;
         }
     }
 

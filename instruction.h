@@ -24,6 +24,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * Generates instructions
+ *
+ * This file maintains an array of instructions and a counter (initialised to
+ * 0). Every time a gen_* function is called, a new instruction is insert into
+ * the array at the position specified by the counter and the counter increment
+ * by one.
+ */
+
 #ifndef INSTRUCTION_H_
 #define INSTRUCTION_H_
 
@@ -55,8 +64,6 @@ enum I_instruction {
     I_Word,
 };
 
-void gen_prepare(void);
-
 void gen_Halt(void);
 void gen_Up(void);
 void gen_Down(void);
@@ -81,12 +88,24 @@ void gen_Loadi(int v);
 void gen_Pop(int n);
 void gen_Rts_Opt(void);
 
+/**
+ * Backpatches/change the target address of the instruction at @i to @addr
+ */
 void backpatch(int i, int addr);
 
+/**
+ * @returns the index of next instruction (not yet generated)
+ */
 int get_next_code_index(void);
 
+/**
+ * Outputs the assembly code
+ */
 void gen_debug(void);
 
+/**
+ * Outputs the binary code
+ */
 void translate_to_binary(void);
 #endif /* end of include guard: INSTRUCTION_H_ */
 

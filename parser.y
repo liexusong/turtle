@@ -234,6 +234,13 @@ comparison
     ;
 %%
 
+/**
+ * The following two functions are taken from "Flex and Bison" by John Levine
+ */
+
+/**
+ * Standard yyerror() function except that this uses the information in @yylloc
+ */
 void
 yyerror(const char *s, ...)
 {
@@ -247,6 +254,9 @@ yyerror(const char *s, ...)
     fprintf(stderr, "\n");
 }
 
+/**
+ * Enhanced yyerror() function. Allows the caller to supply a YYLTYPE.
+ */
 void
 lyyerror(YYLTYPE t, char *s, ...)
 {
@@ -259,5 +269,4 @@ lyyerror(YYLTYPE t, char *s, ...)
     vfprintf(stderr, s, ap);
     fprintf(stderr, "\n");
 }
-
 

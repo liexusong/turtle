@@ -31,19 +31,40 @@
 
 #include "instruction.h"
 
-
+/**
+ */
 static struct table *_venv;
 static struct table *_fenv;
 
+/**
+ * Compact representation of a function call that needs to be linked
+ */
 struct patch {
     int             lineno;
     struct env_entry *fun;
     struct patch   *next;
 };
+
 static struct patch *_patches;
+
+/**
+ * Link all function calls
+ */
+static void     link_func_calls(void);
+
+/**
+ * The address to which a return statement should put the return value. You
+ * must test s_in_scope() before using this value.
+ */
 static int      retOffset;
 
+/**
+ * @return the number of elements in a linked list
+ */
 static int      count_fieldList(struct ast_field_list *list);
+static int      count_expList(struct ast_exp_list *list);
+
+
 static void     trans_global_vardecList(struct ast_var_dec_list *list);
 static void     trans_local_vardecList(struct ast_var_dec_list *list);
 static void     trans_func_def_list(struct ast_fun_dec_list *list);
@@ -51,8 +72,6 @@ static void     trans_stmt_list(struct ast_stmt_list *list);
 static void     trans_stmt(struct ast_stmt *stmt);
 static void     trans_exp_list(struct ast_exp_list *list);
 static void     trans_exp(struct ast_exp *exp);
-
-static void     link_func_calls(void);
 
 static void trans_ast_upStmt(struct ast_stmt *stmt);
 static void trans_ast_downStmt(struct ast_stmt *stmt);
@@ -66,6 +85,9 @@ static void trans_ast_returnStmt(struct ast_stmt *stmt);
 static void trans_ast_callStmt(struct ast_stmt *stmt);
 static void trans_ast_exp_listStmt(struct ast_stmt *stmt);
 
+/**
+ * Array of function pointers.
+ */
 static void (*trans_stmt_fun_list[])(struct ast_stmt *stmt) = {
     trans_ast_upStmt,
     trans_ast_downStmt,
@@ -87,6 +109,9 @@ static void trans_int_exp(struct ast_exp *exp);
 static void trans_call_exp(struct ast_exp *exp);
 static void trans_op_exp(struct ast_exp *exp);
 
+/**
+ * Array of function pointers.
+ */
 static void (*trans_exp_fun_list[])(struct ast_exp *exp) = {
     trans_var_exp,
     trans_int_exp,
@@ -171,10 +196,36 @@ trans_local_vardecList(struct ast_var_dec_list *list)
         assert(dec != NULL);
         struct env_entry *entry = s_find(_venv, dec->sym);
 
-        if (entry != NULL && entry->u.var.scope == env_global) {
+        if (entry != NULL && entry->u.var.scope != env_global) {
             log_err("Trying to redefine %s", s_name(dec->sym));
             lyyerror(dec->pos, "Trying to redefine %s", s_name(dec->sym));
             panic();
+        }
+
+        if (entry != NULL) {
+            if (entry->u.var.scope == env_local) {
+                // Redefine
+                lyyerror(dec->pos,
+                         "Trying to redefine a previously defined parameter %s.",
+                         s_name(dec->sym));
+                panic();
+            } else if (entry->u.var.scope == env_global) {
+                // Shadowing
+#ifdef SANITY
+                lyyerror(dec->pos,
+                         "Trying to redefine a previously defined parameter %s.",
+                         s_name(dec->sym));
+                panic();
+#else
+                log_warn("Trying to redefine a previously defined parameter %s.",
+                         s_name(dec->sym));
+#endif
+            } else {
+                log_err("Unknown scope: %d", entry->u.var.scope);
+                lyyerror(dec->pos,
+                         "Unknown scope: %d", entry->u.var.scope);
+                panic();
+            }
         }
 
         trans_exp(dec->init);
@@ -188,14 +239,12 @@ trans_local_vardecList(struct ast_var_dec_list *list)
 static void
 trans_func_def_list(struct ast_fun_dec_list *list)
 {
-    if (!list) {
+    if (list == NULL) {
         return;
     }
 
     struct ast_fun_dec_list *p,
             *q;
-    debug("trans_func_def_list() starts");
-
     /**
      * Pass 1: check for duplicate definitions
      */
@@ -209,8 +258,6 @@ trans_func_def_list(struct ast_fun_dec_list *list)
         }
     }
 
-    debug("trans_func_def_list() pass 1 finished");
-
     /**
      * Pass 2: insert the symbol table entry for functions to the symbol table
      *
@@ -220,8 +267,6 @@ trans_func_def_list(struct ast_fun_dec_list *list)
         s_enter(_fenv, p->head->name,
                 env_new_fun(p->head->name,
                             count_fieldList(p->head->params)));
-        debug("Added function %s with %d parameters",
-                 s_name(p->head->name), count_fieldList(p->head->params));
     }
 
     /**
@@ -237,11 +282,30 @@ trans_func_def_list(struct ast_fun_dec_list *list)
                 params = params->tail, offset += 1) {
             struct env_entry *entry = s_find(_venv, params->head->name);
 
-            if (entry != NULL && entry->u.var.scope == env_local) {
-                lyyerror(params->head->pos,
-                         "Trying to redefine a previsouly defined parameter %s.",
-                         params->head->name);
-                panic();
+            if (entry != NULL) {
+                if (entry->u.var.scope == env_local) {
+                    // Redefine
+                    lyyerror(params->head->pos,
+                            "Trying to redefine a previously defined parameter %s.",
+                            params->head->name);
+                    panic();
+                } else if (entry->u.var.scope == env_global) {
+                    // Shadow
+#ifdef SANITY
+                    lyyerror(params->head->pos,
+                            "Trying to shadow a previously defined global variable %s.",
+                            s_name(params->head->name));
+                    panic();
+#else
+                    log_warn("Trying to shadow a previously defined global variable %s.",
+                             s_name(params->head->name));
+#endif
+                } else {
+                    log_err("Unknown scope: %d", entry->u.var.scope);
+                    lyyerror(params->head->pos,
+                             "Unknown scope: %d", entry->u.var.scope);
+                    panic();
+                }
             }
 
             s_enter(_venv, params->head->name,
@@ -250,11 +314,10 @@ trans_func_def_list(struct ast_fun_dec_list *list)
         }
 
         int             addr = get_next_code_index();
-        // TODO check this
         env_set_addr(_fenv, p->head->name, addr);
         trans_local_vardecList(p->head->var);
         trans_stmt_list(p->head->body);
-        gen_Rts();
+        gen_Rts(); // Generate the Rts instruction nevertheless
         FREE_LIST(p->head->params);
         free(p->head);
         s_leave_scope(_venv);
@@ -288,7 +351,6 @@ trans_ast_downStmt(struct ast_stmt *stmt)
     gen_Down();
 }
 
-
 static void
 trans_ast_moveStmt(struct ast_stmt *stmt)
 {
@@ -320,8 +382,8 @@ trans_ast_readStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Unkown variable scope. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown variable scope. Please report this to the author.");
+        log_err("Unknown variable scope. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown variable scope. Please report this to the author.");
         panic();
     }
 }
@@ -350,8 +412,8 @@ trans_ast_assignStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Unkown variable scope. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown variable scope. Please report this to the author.");
+        log_err("Unknown variable scope. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown variable scope. Please report this to the author.");
         panic();
     }
 }
@@ -390,8 +452,8 @@ transform_iftStmt(struct ast_stmt *stmt)
         return transform_iftStmt(stmt);
 
     default:
-        log_err("Unkown comparision. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Unknown comparison. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown comparison. Please report this to the author.");
         panic();
     }
     sentinel("Should not reach");
@@ -399,6 +461,20 @@ error:
     return NULL;
 }
 
+/**
+ * Translate If statement
+ *
+ * The structure is a bit like:
+ *
+ * test:
+ *      ... (Set up the test)
+ *      goto label `then' if the condition holds
+ *      goto label `end'
+ * then:
+ *      ...
+ * end:
+ *      ...
+ */
 static void
 trans_ast_iftStmt(struct ast_stmt *stmt)
 {
@@ -406,8 +482,8 @@ trans_ast_iftStmt(struct ast_stmt *stmt)
 
     if (stmt->u.ift.test->kind != ast_opExp ||
             stmt->u.ift.test->u.op.oper < ast_EQ) {
-        log_err("Unkown comparision. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Unknown comparison. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown comparison. Please report this to the author.");
         panic();
     }
 
@@ -428,14 +504,16 @@ trans_ast_iftStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Unkown comparision. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Unknown comparison. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown comparison. Please report this to the author.");
         panic();
     }
 
     gen_Sub();
     gen_Test();
     gen_Pop(1);
+    // j_then is the index of the next instruction, i.e., Jeq or Jlt. It is to
+    // be backpatched with l_then.
     int j_then = get_next_code_index();
 
     switch (stmt->u.ift.test->u.op.oper) {
@@ -448,17 +526,26 @@ trans_ast_iftStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Unkown comparision. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Unknown comparison. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown comparison. Please report this to the author.");
         panic();
         break;
     }
 
+    // j_then is the index of the next instruction, i.e., Jump. It is to be
+    // backpatched with l_end.
     int j_end = get_next_code_index();
     gen_Jump(0);
+    // l_then is the index of the next instruction, i.e., the first instruction
+    // of `then' part. This is what the Jeq or Jlt in j_then should be
+    // backpatched to.
     int l_then = get_next_code_index();
     trans_stmt_list(stmt->u.ift.then);
+    // l_then is the index of the next instruction, i.e., the first instruction
+    // of the code follows the if statement. This is what the Jump in j_end
+    // should be backpatched to.
     int l_end = get_next_code_index();
+    // Do the backpatches
     backpatch(j_then, l_then);
     backpatch(j_end, l_end);
     free(stmt->u.ift.test);
@@ -498,8 +585,8 @@ transform_ifteStmt(struct ast_stmt *stmt)
         return transform_ifteStmt(stmt);
 
     default:
-        log_err("Unkown comparision. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Unknown comparison. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown comparison. Please report this to the author.");
         panic();
     }
     sentinel("Should not reach");
@@ -507,6 +594,23 @@ error:
     return NULL;
 }
 
+/**
+ * Translate If-else statement
+ *
+ * The structure is a bit like:
+ *
+ * test:
+ *      ... (Set up the test)
+ *      goto label `then' if the condition holds
+ *      goto label `else'
+ * then:
+ *      ...
+ *      goto label `end'
+ * else:
+ *      ...
+ * end:
+ *      ...
+ */
 static void
 trans_ast_ifteStmt(struct ast_stmt *stmt)
 {
@@ -520,8 +624,8 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
 
     if (stmt->u.ifte.test->kind != ast_opExp ||
             stmt->u.ifte.test->u.op.oper < ast_EQ) {
-        log_err("Unkown comparision. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Unknown comparison. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown comparison. Please report this to the author.");
         log_err("error");
         panic();
     }
@@ -534,8 +638,8 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Unkown comparision. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Unknown comparison. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown comparison. Please report this to the author.");
         log_err("Not supported");
         panic();
     }
@@ -555,8 +659,8 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Unkown comparision. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Unknown comparison. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown comparison. Please report this to the author.");
         log_err("Not supported");
         panic();
         break;
@@ -577,6 +681,21 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
     free(stmt->u.ifte.test);
 }
 
+/**
+ * Translate while statement
+ *
+ * The structure is a bit like:
+ *
+ * test:
+ *      ... (Set up test)
+ *      goto label `body' if the condition holds
+ *      goto end
+ * body:
+ *      ...
+ *      goto label `test'
+ * end:
+ *      ...
+ */
 static void
 trans_ast_whileStmt(struct ast_stmt *stmt)
 {
@@ -584,8 +703,8 @@ trans_ast_whileStmt(struct ast_stmt *stmt)
 
     if (stmt->u.whilee.test->kind != ast_opExp ||
             stmt->u.whilee.test->u.op.oper < ast_EQ) {
-        log_err("Unkown comparision. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Unknown comparison. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown comparison. Please report this to the author.");
         log_err("error");
         panic();
     }
@@ -600,8 +719,8 @@ trans_ast_whileStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Unkown comparision. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Unknown comparison. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown comparison. Please report this to the author.");
         panic();
         break;
     }
@@ -621,8 +740,8 @@ trans_ast_whileStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Unkown comparision. Please report this to the author.");
-        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Unknown comparison. Please report this to the author.");
+        lyyerror(stmt->pos, "Unknown comparison. Please report this to the author.");
         panic();
         break;
     }
@@ -663,7 +782,7 @@ trans_ast_callStmt(struct ast_stmt *stmt)
     assert(stmt && stmt->kind == ast_callStmt);
     struct env_entry *p = s_find(_fenv, stmt->u.call.func);
 
-    if (!p) {
+    if (p == NULL) {
         log_err("Calling undefined function: %s.", s_name(stmt->u.call.func));
         lyyerror(stmt->pos, "Calling undefined function: %s.", s_name(stmt->u.call.func));
         panic();
@@ -716,13 +835,13 @@ trans_ast_exp_listStmt(struct ast_stmt *stmt)
 static void
 trans_stmt(struct ast_stmt *stmt)
 {
-    if (!stmt) {
+    if (stmt == NULL) {
         return;
     } else if (stmt->kind <= ast_exp_listStmt) {
         (*trans_stmt_fun_list[stmt->kind])(stmt);
         free(stmt);
     } else {
-        lyyerror(stmt->pos, "Unkown statement type. "
+        lyyerror(stmt->pos, "Unknown statement type. "
                             "Please report this to the author.");
         panic();
     }
@@ -738,7 +857,6 @@ trans_exp_list(struct ast_exp_list *list)
     struct ast_exp_list *start = list;
 
     for (; list; list = list->tail) {
-        log_info("exp_list");
         trans_exp(list->head);
     }
 
@@ -766,8 +884,8 @@ static void trans_var_exp(struct ast_exp *exp)
         break;
 
     default:
-        log_err("Unkown scope: %d", p->u.var.scope);
-        lyyerror(exp->pos, "Unkown scope: %d", p->u.var.scope);
+        log_err("Unknown scope: %d", p->u.var.scope);
+        lyyerror(exp->pos, "Unknown scope: %d", p->u.var.scope);
         panic();
     }
 }
@@ -850,8 +968,8 @@ trans_op_exp(struct ast_exp *exp)
         break;
 
     default:
-        log_err("Unkown comparison %d", exp->u.op.oper);
-        lyyerror(exp->pos, "Unkown comparison %d", exp->u.op.oper);
+        log_err("Unknown comparison %d", exp->u.op.oper);
+        lyyerror(exp->pos, "Unknown comparison %d", exp->u.op.oper);
         panic();
     }
 }
@@ -859,14 +977,14 @@ trans_op_exp(struct ast_exp *exp)
 static void
 trans_exp(struct ast_exp *exp)
 {
-    if (!exp) {
+    if (exp == NULL) {
         return;
     } else if (exp->kind <= ast_opExp) {
         (*trans_exp_fun_list[exp->kind])(exp);
         free(exp);
     } else {
-        log_err("Unkown expression type %d. Please report this to the author.", exp->kind);
-        lyyerror(exp->pos, "Unkown expression type %d. Please report this to the author.", exp->kind);
+        log_err("Unknown expression type %d. Please report this to the author.", exp->kind);
+        lyyerror(exp->pos, "Unknown expression type %d. Please report this to the author.", exp->kind);
         panic();
     }
 }
@@ -874,26 +992,20 @@ trans_exp(struct ast_exp *exp)
 void
 sem_trans_prog(struct ast_program *prog)
 {
-    if (!prog) {
+    if (prog == NULL) {
         return;
     }
 
     _venv = env_base_venv();
     _fenv = env_base_fenv();
     retOffset = 0;
-    log_info("trans_global_vardecList() begins");
     trans_global_vardecList(prog->global_var_def_list);
-    log_info("trans_global_vardecList() ends");
     int             j_jump = get_next_code_index();
     gen_Jump(0);
-    log_info("trans_func_def_list() begins");
     trans_func_def_list(prog->func_def_list);
-    log_info("trans_func_def_list() ends");
     link_func_calls();
     int             l_jump = get_next_code_index();
-    log_info("trans_stmt_list() begins");
     trans_stmt_list(prog->body);
-    log_info("trans_stmt_list() ends");
     backpatch(j_jump, l_jump);
     gen_Halt();
     free_allocated();

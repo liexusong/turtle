@@ -2,7 +2,7 @@
 
 for i in tests/*.t
 do
-    ./turtle $i -s -d -o out.p &> /dev/null
+    ./turtle $i -s -l -o out.p &> /dev/null
     ../turtle_2/Turtle/tools/DisASM/DisASM ${i/.t/.p} out.asm > /dev/null
     sdiff out.p out.asm
 

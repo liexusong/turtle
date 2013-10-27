@@ -24,14 +24,28 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * Abstract Syntax Tree
+ *
+ * This file defines the nodes in AST. It provides constructors for each type of
+ * nodes.
+ */
+
 #ifndef AST_H_
 #define AST_H_
 
 #include "symbol.h"
 #include "parser.h"
 
+/**
+ * Please see Chapter 8 of "Flex & Bison" by John Levine
+ * This is used for error reporting.
+ */
 typedef YYLTYPE ast_pos;
 
+/**
+ * The top level node of the AST
+ */
 struct ast_program {
     char *name;
     struct ast_var_dec_list *global_var_def_list;
@@ -52,6 +66,9 @@ enum ast_oper {
     ast_GEQ,
 };
 
+/**
+ * Variable definition/declaration
+ */
 struct ast_var_dec {
     ast_pos pos;
     struct s_symbol *sym;
@@ -63,6 +80,9 @@ struct ast_var_dec_list {
     struct ast_var_dec_list *tail;
 };
 
+/**
+ * Function definition
+ */
 struct ast_fun_dec {
     ast_pos pos;
     struct s_symbol *name;
@@ -76,6 +96,9 @@ struct ast_fun_dec_list {
     struct ast_fun_dec_list *tail;
 };
 
+/**
+ * Expression
+ */
 struct ast_exp {
     enum {
         ast_varExp,
@@ -85,12 +108,16 @@ struct ast_exp {
     } kind;
     ast_pos pos;
     union {
+        // ast_varExp
         struct s_symbol *var;
+        // ast_intExp
         int intt;
+        // ast_callExp
         struct {
             struct s_symbol *func;
             struct ast_exp_list *args;
         } call;
+        // ast_opExp
         struct {
             enum ast_oper oper;
             struct ast_exp *left;
@@ -104,6 +131,9 @@ struct ast_exp_list {
     struct ast_exp_list *tail;
 };
 
+/**
+ * Statement
+ */
 struct ast_stmt {
     enum {
         ast_upStmt,
@@ -123,12 +153,12 @@ struct ast_stmt {
         /* up; - needs only the pos */
         /* down; - needs only the pos */
         struct {
+            struct s_symbol *var;
+        } read;
+        struct {
             struct ast_exp *exp1;
             struct ast_exp *exp2;
         } move;
-        struct {
-            struct s_symbol *var;
-        } read;
         struct {
             struct s_symbol *var;
             struct ast_exp *exp;
@@ -173,14 +203,18 @@ struct ast_field_list {
 };
 
 
+/**
+ * The following are the constructors of AST nodes...
+ * They are trivial. You may skip them...
+ */
+
 struct ast_program *ast_new_program(char *program_name,
                                     struct ast_var_dec_list *global_var_def_list,
                                     struct ast_fun_dec_list *func_def_list,
                                     struct ast_stmt_list *body);
 
-//struct ast_var *ast_Var(struct s_symbol *sym);
-
-struct ast_var_dec *ast_new_var_dec(YYLTYPE t, struct s_symbol *sym, struct ast_exp *init);
+struct ast_var_dec *ast_new_var_dec(YYLTYPE t, struct s_symbol *sym,
+                                    struct ast_exp *init);
 struct ast_var_dec_list *ast_new_var_dec_list(struct ast_var_dec *head,
                                               struct ast_var_dec_list *tail);
 struct ast_fun_dec *ast_new_fundec(YYLTYPE t, struct s_symbol *name,
@@ -194,16 +228,18 @@ struct ast_exp *ast_new_var_exp(YYLTYPE t, struct s_symbol *var);
 struct ast_exp *ast_int_exp(YYLTYPE t, int i);
 struct ast_exp *ast_new_call_exp(YYLTYPE t, struct s_symbol *func,
                                  struct ast_exp_list *args);
-struct ast_exp *ast_new_op_exp(YYLTYPE t, enum ast_oper oper, struct ast_exp *left,
-                               struct ast_exp *right);
+struct ast_exp *ast_new_op_exp(YYLTYPE t, enum ast_oper oper,
+                               struct ast_exp *left, struct ast_exp *right);
 struct ast_exp_list *ast_new_exp_list(struct ast_exp *head,
                                       struct ast_exp_list *tail);
 
 struct ast_stmt *ast_new_up_stmt(YYLTYPE t);
 struct ast_stmt *ast_new_down_stmt(YYLTYPE t);
-struct ast_stmt *ast_new_move_stmt(YYLTYPE t, struct ast_exp *exp1, struct ast_exp *exp2);
+struct ast_stmt *ast_new_move_stmt(YYLTYPE t, struct ast_exp *exp1,
+                                   struct ast_exp *exp2);
 struct ast_stmt *ast_new_read_stmt(YYLTYPE t, struct s_symbol *var);
-struct ast_stmt *ast_new_assign_stmt(YYLTYPE t, struct s_symbol *var, struct ast_exp *exp);
+struct ast_stmt *ast_new_assign_stmt(YYLTYPE t, struct s_symbol *var,
+                                     struct ast_exp *exp);
 struct ast_stmt *ast_new_ift_stmt(YYLTYPE t, struct ast_exp *test,
                                   struct ast_stmt_list *then);
 struct ast_stmt *ast_new_ifte_stmt(YYLTYPE t, struct ast_exp *test,

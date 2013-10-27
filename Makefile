@@ -1,5 +1,5 @@
-CC=clang
-CFLAGS=-g -O3 -std=gnu99
+CC=gcc
+CFLAGS=-g -O3 -std=gnu99 -DNDEBUG
 CLFAGS_WARNING=-Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wstrict-prototypes -Wmissing-prototypes#-Wconversion
 LDFLAGS=-lfl
 SOURCES= absyn.c dbg.c env.c instruction.c lexer.c main.c parser.c semant.c symbol.c table.c

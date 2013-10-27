@@ -24,12 +24,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * Semantics checking and Code generation
+ */
+
 #ifndef SEMANT_H_
 #define SEMANT_H_
 
 #include "absyn.h"
 #include "instruction.h"
 
+/**
+ * Does both semantics checking and code generation for @prog
+ */
 void sem_trans_prog(struct ast_program *prog);
 
 #endif /* end of include guard: SEMANT_H_ */
