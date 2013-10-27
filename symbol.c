@@ -41,7 +41,7 @@ mksymbol(char *name, struct s_symbol *next)
 {
     struct s_symbol *s = malloc(sizeof(*s));
     check_mem(s);
-    s->name = name;
+    s->name = strdup(name);
     s->next = next;
     return s;
 error:
@@ -132,4 +132,21 @@ int
 s_in_scope(void)
 {
     return nested_level >= 1;
+}
+
+void
+s_clear(void)
+{
+    int index;
+    for (index = 0; index < SIZE; ++index) {
+        struct s_symbol *syms = hashtable[index];
+        struct s_symbol *sym;
+        struct s_symbol *tmp;
+        for (sym = syms; sym; sym = tmp) {
+            log_info("free(name = %s)", sym->name);
+            free(sym->name);
+            tmp = sym->next;
+            free(sym);
+        }
+    }
 }

@@ -115,7 +115,7 @@ program
         {
             $$ = ast_new_program(s_name($2), $3, $4, $5);
             sem_trans_prog($$);
-            //free_ast_program($$);
+            free($$);
             if (sflag) {
                 gen_debug();
             } else {

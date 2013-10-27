@@ -56,6 +56,8 @@ binder_new_binder(void *key, void *value, struct binder *next,
     b->value = value;
     b->next = next;
     b->prevtop = prevtop;
+
+    record_allocated(b);
     return b;
 error:
     return NULL;
@@ -87,6 +89,7 @@ table_insert(struct table *t, void *key, void *value)
     t->table[index] =
         binder_new_binder(key, value, t->table[index], t->top);
     t->top = key;
+    return;
 error:
     return;
 }
@@ -130,3 +133,4 @@ table_pop(struct table *t)
 error:
     return NULL;
 }
+

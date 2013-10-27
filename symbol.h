@@ -47,5 +47,7 @@ int s_in_scope(void);
 
 extern struct s_symbol marksym;
 
+void s_clear(void);
+
 #endif /* end of include guard: SYMBOL_H_ */
 

@@ -73,11 +73,12 @@ ident       [a-zA-Z][a-zA-Z0-9\_\']*
 "-"         { return T_MINUS; }
 "*"         { return T_MULTIPLY; }
 
+"//".*\n    { yycolumn = 1; }
 "//".*      /* ignore comments */
 
 <<EOF>>     { yyterminate(); }
 
-{ident}     { yylval.sym = s_new_symbol(strdup(yytext)); log_info("%s", s_name(yylval.sym)); return T_IDENT; }
+{ident}     { yylval.sym = s_new_symbol(yytext); log_info("%s", s_name(yylval.sym)); return T_IDENT; }
 {digit}+    { sscanf(yytext, "%d", &(yylval.val)); return T_INT_LITERAL; }
 .           { return yytext[0]; }
 

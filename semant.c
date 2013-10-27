@@ -138,6 +138,7 @@ static void
 trans_global_vardecList(struct ast_var_dec_list *list)
 {
     int             offset = 1;
+    struct ast_var_dec_list *start = list;
 
     for (; list; list = list->tail, offset += 1) {
         struct ast_var_dec *dec = list->head;
@@ -145,20 +146,24 @@ trans_global_vardecList(struct ast_var_dec_list *list)
         struct env_entry *entry = s_find(_venv, dec->sym);
 
         if (entry != NULL) {
-            log_err("Redefining %s", s_name(dec->sym));
+            lyyerror(dec->pos, "Redefining %s", s_name(dec->sym));
             panic();
         }
 
         trans_exp(dec->init);
         s_enter(_venv, dec->sym,
                 env_new_var(dec->sym, env_global, offset));
+        free(dec);
     }
+
+    FREE_LIST(start);
 }
 
 static void
 trans_local_vardecList(struct ast_var_dec_list *list)
 {
     int             offset = 1;
+    struct ast_var_dec_list *start = list;
 
     for (; list; list = list->tail, offset += 1) {
         struct ast_var_dec *dec = list->head;
@@ -172,7 +177,10 @@ trans_local_vardecList(struct ast_var_dec_list *list)
 
         trans_exp(dec->init);
         s_enter(_venv, dec->sym, env_new_var(dec->sym, env_local, offset));
+        free(dec);
     }
+
+    FREE_LIST(start);
 }
 
 static void
@@ -233,6 +241,7 @@ trans_func_def_list(struct ast_fun_dec_list *list)
 
             s_enter(_venv, params->head->name,
                     env_new_var(params->head->name, env_local, offset));
+            free(params->head);
         }
 
         int             addr = get_next_code_index();
@@ -241,17 +250,23 @@ trans_func_def_list(struct ast_fun_dec_list *list)
         trans_local_vardecList(p->head->var);
         trans_stmt_list(p->head->body);
         gen_Rts();
+        FREE_LIST(p->head->params);
+        free(p->head);
         s_leave_scope(_venv);
         retOffset = 0;
     }
+
+    FREE_LIST(list);
 }
 
 static void
 trans_stmt_list(struct ast_stmt_list *list)
 {
+    struct ast_stmt_list *start = list;
     for (; list; list = list->tail) {
         trans_stmt(list->head);
     }
+    FREE_LIST(start);
 }
 
 static void
@@ -432,6 +447,7 @@ trans_ast_iftStmt(struct ast_stmt *stmt)
     int l_end = get_next_code_index();
     backpatch(j_then, l_then);
     backpatch(j_end, l_end);
+    free(stmt->u.ift.test);
 }
 
 static struct ast_stmt*
@@ -538,6 +554,7 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
     backpatch(j_then, l_then);
     backpatch(j_else, l_else);
     backpatch(j_end, l_end);
+    free(stmt->u.ifte.test);
 }
 
 static void
@@ -596,6 +613,7 @@ trans_ast_whileStmt(struct ast_stmt *stmt)
     backpatch(j_begin, l_begin);
     backpatch(j_end, l_end);
     backpatch(j_test, l_test);
+    free(stmt->u.whilee.test);
 }
 
 static void
@@ -604,7 +622,7 @@ trans_ast_returnStmt(struct ast_stmt *stmt)
     assert(stmt && stmt->kind == ast_returnStmt);
 
     if (!s_in_scope()) {
-        log_info("Return from the outmost scope");
+        lyyerror(stmt->pos, "Return from the outmost scope");
         panic();
     }
 
@@ -670,6 +688,7 @@ trans_stmt(struct ast_stmt *stmt)
         return;
     } else if (stmt->kind <= ast_exp_listStmt) {
         (*trans_stmt_fun_list[stmt->kind])(stmt);
+        free(stmt);
     } else {
         log_err("Unkown");
         panic();
@@ -684,10 +703,14 @@ trans_exp_list(struct ast_exp_list *list)
         return;
     }
 
+    struct ast_exp_list *start = list;
+
     for (; list; list = list->tail) {
         log_info("exp_list");
         trans_exp(list->head);
     }
+
+    FREE_LIST(start);
 }
 
 static void trans_var_exp(struct ast_exp *exp)
@@ -797,6 +820,7 @@ trans_exp(struct ast_exp *exp)
         return;
     } else if (exp->kind <= ast_opExp) {
         (*trans_exp_fun_list[exp->kind])(exp);
+        free(exp);
     } else {
         log_err("Unkown type");
         panic();
@@ -828,5 +852,7 @@ sem_trans_prog(struct ast_program *prog)
     log_info("trans_stmt_list() ends");
     backpatch(j_jump, l_jump);
     gen_Halt();
+    free_allocated();
+    s_clear();
     return;
 }

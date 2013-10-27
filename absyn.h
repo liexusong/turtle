@@ -28,8 +28,9 @@
 #define AST_H_
 
 #include "symbol.h"
+#include "parser.h"
 
-typedef int ast_pos;
+typedef YYLTYPE ast_pos;
 
 struct ast_program {
     char *name;

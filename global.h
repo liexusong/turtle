@@ -47,5 +47,33 @@ extern int sflag;
 extern int dflag;
 extern FILE *fout;
 
+#define FREE_LIST_CONTENT(list) do { \
+                                    typeof(list) t; \
+                                    while (list != NULL) { \
+                                        t = list->tail; \
+                                        free(list->head); \
+                                        free(list); \
+                                        list = t; \
+                                    } \
+                                } while (0)
+
+
+#define FREE_LIST(list) do { \
+                            typeof(list) t; \
+                            while (list != NULL) { \
+                                t = list->tail; \
+                                free(list); \
+                                list = t; \
+                            } \
+                        } while (0)
+
+struct allocated_linked_list_memory {
+    void *head;
+    struct allocated_linked_list_memory *tail;
+};
+
+void record_allocated(void *head);
+void free_allocated(void);
+
 #endif /* end of include guard: GLOBAL_H_ */
 

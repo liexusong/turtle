@@ -38,12 +38,34 @@ FILE           *fout;
 int             sflag = 0;
 int             dflag = 0;
 
+static struct allocated_linked_list_memory *first_record = NULL;
+
+void free_allocated(void)
+{
+    FREE_LIST_CONTENT(first_record);
+    FREE_LIST(first_record);
+    first_record = NULL;
+}
+
+void record_allocated(void *head)
+{
+    struct allocated_linked_list_memory *list = malloc(sizeof(*list));
+    check_mem(list);
+    list->head = head;
+    list->tail = first_record;
+    first_record = list;
+    return;
+
+error:
+    return;
+}
+
 void
 panic(void)
 {
-    if (fout == stdout) {
-        log_info("Panic!");
-    } else {
+    log_err("Panic!");
+
+    if (fout != stdout) {
         fclose(fout);
     }
 
@@ -89,6 +111,8 @@ main(int argc, char *argv[])
             do {
                 yyparse();
             } while (!feof(yyin));
+
+            fclose(f);
         } while (++optind < argc);
     } else {
         yyparse();

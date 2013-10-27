@@ -27,6 +27,11 @@
 #include "global.h"
 #include "env.h"
 
+struct env_list {
+    struct env_entry *entry;
+    struct env_list *tail;
+};
+
 struct env_entry *
 env_new_var(struct s_symbol *sym, enum env_var_scope scope, int index)
 {
@@ -36,6 +41,8 @@ env_new_var(struct s_symbol *sym, enum env_var_scope scope, int index)
     e->sym = sym;
     e->u.var.scope = scope;
     e->index = index;
+
+    record_allocated(e);
     return e;
 error:
     return NULL;
@@ -50,6 +57,8 @@ env_new_fun(struct s_symbol *sym, int count_params)
     e->sym = sym;
     e->u.func.count_params = count_params;
     e->index = 0;
+
+    record_allocated(e);
     return e;
 error:
     return NULL;
@@ -77,3 +86,4 @@ env_set_addr(struct table *t, struct s_symbol *sym, int addr)
 error:
     return;
 }
+

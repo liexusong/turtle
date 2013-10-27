@@ -10,7 +10,7 @@ EXECUTABLE=turtle
 all: $(SOURCES) $(HEADER) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
-	$(CC) $(CFLAGS) $(OBJECTS) -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $(CLFAGS_WARNING) $(OBJECTS) -o $@ $(LDFLAGS)
 
 lexer.o: lexer.c
 	$(CC) $(CFLAGS) $< -c -o $@

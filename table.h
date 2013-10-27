@@ -36,5 +36,7 @@ void *table_pop(struct table *t);
 
 struct table *table_new_empty(void);
 
+void table_release(void);
+
 #endif /* end of include guard: HASH_H_ */
 
