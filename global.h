@@ -38,6 +38,7 @@
 #include "dbg.h"
 #include "parser.h"
 
+void yyerror(const char *s, ...);
 void lyyerror(YYLTYPE t, char *s, ...);
 
 /**

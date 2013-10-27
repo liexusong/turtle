@@ -6,6 +6,8 @@ SOURCES= absyn.c dbg.c env.c instruction.c lexer.c main.c parser.c semant.c symb
 HEADERS= absyn.h dbg.h env.h instruction.h lexer.h global.h parser.h semant.h symbol.h table.h
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=turtle
+DISASM=tools/DisASM
+DISASMHS=tools/DisASM.hs
 
 all: $(SOURCES) $(HEADER) $(EXECUTABLE)
 
@@ -23,6 +25,12 @@ parser.c: parser.y
 
 .c.o:
 	$(CC) $(CFLAGS) $(CLFAGS_WARNING) $< -c -o $@
+
+test: $(DISASM)
+	./run_tests.sh
+
+$(DISASM) : $(DISASMHS)
+	ghc -o $(DISASM) $(DISASMHS)
 
 clean:
 	rm -f $(OBJECTS)

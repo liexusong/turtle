@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-for i in tests/*.t
+for i in tests/default/*.t
 do
     ./turtle $i -s -l -o out.p &> /dev/null
-    ../turtle_2/Turtle/tools/DisASM/DisASM ${i/.t/.p} out.asm > /dev/null
-    sdiff out.p out.asm
+    ./tools/DisASM ${i/.t/.p} out.asm > /dev/null
+    sdiff out.p out.asm > /dev/null
 
     if [ $? -eq 0 ]
     then
