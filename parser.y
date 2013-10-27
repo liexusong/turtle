@@ -37,27 +37,23 @@
 %define parse.error verbose
 
 %union{
-    struct ast_program *a_program;
-    struct ast_VAR *a_var;
+    struct ast_program          *a_program;
+    struct ast_var_dec          *a_vardec;
+    struct ast_var_dec_list     *a_vardeclist;
+    struct ast_fun_dec          *a_fundec;
+    struct ast_fun_dec_list     *a_fundeclist;
 
-    struct ast_var_dec *a_vardec;
-    struct ast_var_dec_list *a_vardeclist;
+    struct ast_exp              *a_exp;
+    struct ast_exp_list         *a_explist;
 
-    struct ast_fun_dec *a_fundec;
-    struct ast_fun_dec_list *a_fundeclist;
+    struct ast_stmt             *a_stmt;
+    struct ast_stmt_list        *a_stmtlist;
 
-    struct ast_exp *a_exp;
-    struct ast_exp_list *a_explist;
+    struct ast_field            *a_field;
+    struct ast_field_list       *a_fieldlist;
 
-    struct ast_stmt *a_stmt;
-    struct ast_stmt_list *a_stmtlist;
-
-    struct ast_field *a_field;
-    struct ast_field_list *a_fieldlist;
-
-    int val;
-
-    struct s_symbol *sym;
+    int                         val;
+    struct s_symbol             *sym;
 }
 
 %token T_TURTLE
@@ -106,7 +102,7 @@
 
 %type <a_exp> comparison
 
-%nonassoc T_EQ T_LT
+%nonassoc T_EQ T_LT T_LEQ T_GT T_GEQ
 %left T_MINUS T_PLUS
 %left T_MULTIPLY
 %left T_NEG
