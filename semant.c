@@ -146,7 +146,8 @@ trans_global_vardecList(struct ast_var_dec_list *list)
         struct env_entry *entry = s_find(_venv, dec->sym);
 
         if (entry != NULL) {
-            lyyerror(dec->pos, "Redefining %s", s_name(dec->sym));
+            log_err("Trying to redefine %s.", s_name(dec->sym));
+            lyyerror(dec->pos, "Trying to redefine %s.", s_name(dec->sym));
             panic();
         }
 
@@ -171,7 +172,8 @@ trans_local_vardecList(struct ast_var_dec_list *list)
         struct env_entry *entry = s_find(_venv, dec->sym);
 
         if (entry != NULL && entry->u.var.scope == env_global) {
-            log_err("Redefining %s", s_name(dec->sym));
+            log_err("Trying to redefine %s", s_name(dec->sym));
+            lyyerror(dec->pos, "Trying to redefine %s", s_name(dec->sym));
             panic();
         }
 
@@ -192,7 +194,7 @@ trans_func_def_list(struct ast_fun_dec_list *list)
 
     struct ast_fun_dec_list *p,
             *q;
-    log_info("trans_func_def_list() starts");
+    debug("trans_func_def_list() starts");
 
     /**
      * Pass 1: check for duplicate definitions
@@ -200,13 +202,14 @@ trans_func_def_list(struct ast_fun_dec_list *list)
     for (p = list; p; p = p->tail) {
         for (q = p->tail; q; q = q->tail) {
             if (p->head->name == q->head->name) {
-                log_err("Redefining function");
+                log_err("Redefining function %s", s_name(p->head->name));
+                lyyerror(p->head->pos, "Redefining function %s", s_name(p->head->name));
                 panic();
             }
         }
     }
 
-    log_info("trans_func_def_list() pass 1 finished");
+    debug("trans_func_def_list() pass 1 finished");
 
     /**
      * Pass 2: insert the symbol table entry for functions to the symbol table
@@ -217,7 +220,7 @@ trans_func_def_list(struct ast_fun_dec_list *list)
         s_enter(_fenv, p->head->name,
                 env_new_fun(p->head->name,
                             count_fieldList(p->head->params)));
-        log_info("Added function %s with %d parameters",
+        debug("Added function %s with %d parameters",
                  s_name(p->head->name), count_fieldList(p->head->params));
     }
 
@@ -235,7 +238,9 @@ trans_func_def_list(struct ast_fun_dec_list *list)
             struct env_entry *entry = s_find(_venv, params->head->name);
 
             if (entry != NULL && entry->u.var.scope == env_local) {
-                log_err("Redefine");
+                lyyerror(params->head->pos,
+                         "Trying to redefine a previsouly defined parameter %s.",
+                         params->head->name);
                 panic();
             }
 
@@ -299,8 +304,9 @@ trans_ast_readStmt(struct ast_stmt *stmt)
     assert(stmt && stmt->kind == ast_readStmt);
     struct env_entry *p = s_find(_venv, stmt->u.read.var);
 
-    if (!p) {
-        log_err("Cannot read to undefined variable");
+    if (p == NULL) {
+        log_err("Read to a undefined variable \"%s\".", s_name(stmt->u.read.var));
+        lyyerror(stmt->pos, "Read to a undefined variable \"%s\".", s_name(stmt->u.read.var));
         panic();
     }
 
@@ -314,7 +320,8 @@ trans_ast_readStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Unkown type");
+        log_err("Unkown variable scope. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown variable scope. Please report this to the author.");
         panic();
     }
 }
@@ -325,8 +332,9 @@ trans_ast_assignStmt(struct ast_stmt *stmt)
     assert(stmt && stmt->kind == ast_assignStmt);
     struct env_entry *p = s_find(_venv, stmt->u.assign.var);
 
-    if (!p) {
-        log_err("Cannot assign a value to the undefined variable");
+    if (p == NULL) {
+        log_err("Cannot assign a value to the undefined variable \"%s\"", s_name(stmt->u.assign.var));
+        lyyerror(stmt->pos, "Cannot assign a value to the undefined variable \"%s\"", s_name(stmt->u.assign.var));
         panic();
     }
 
@@ -342,7 +350,8 @@ trans_ast_assignStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Unkown");
+        log_err("Unkown variable scope. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown variable scope. Please report this to the author.");
         panic();
     }
 }
@@ -365,22 +374,24 @@ transform_iftStmt(struct ast_stmt *stmt)
 
     case ast_NEQ:
         test->u.op.oper = ast_EQ;
-        return ast_new_ifte_stmt(test, NULL, then);
+        return ast_new_ifte_stmt(stmt->pos, test, NULL, then);
 
     case ast_GT:
-        stmt->u.ift.test = ast_new_op_exp(ast_LT, right, left);
+        stmt->u.ift.test = ast_new_op_exp(stmt->pos, ast_LT, right, left);
         return stmt;
 
     case ast_LEQ:
-        test1 = ast_new_op_exp(ast_LT, left, right);
-        test2 = ast_new_op_exp(ast_EQ, left, right);
-        return ast_new_ifte_stmt(test1, then, ast_new_stmt_list(ast_new_ifte_stmt(test2, then, NULL), NULL));
+        test1 = ast_new_op_exp(stmt->pos, ast_LT, left, right);
+        test2 = ast_new_op_exp(stmt->pos, ast_EQ, left, right);
+        return ast_new_ifte_stmt(stmt->pos, test1, then, ast_new_stmt_list(ast_new_ifte_stmt(stmt->pos, test2, then, NULL), NULL));
 
     case ast_GEQ:
-        stmt->u.ift.test = ast_new_op_exp(ast_LEQ, right, left);
+        stmt->u.ift.test = ast_new_op_exp(stmt->pos, ast_LEQ, right, left);
         return transform_iftStmt(stmt);
 
     default:
+        log_err("Unkown comparision. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
         panic();
     }
     sentinel("Should not reach");
@@ -395,7 +406,8 @@ trans_ast_iftStmt(struct ast_stmt *stmt)
 
     if (stmt->u.ift.test->kind != ast_opExp ||
             stmt->u.ift.test->u.op.oper < ast_EQ) {
-        log_err("error");
+        log_err("Unkown comparision. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
         panic();
     }
 
@@ -416,7 +428,8 @@ trans_ast_iftStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Non supported");
+        log_err("Unkown comparision. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
         panic();
     }
 
@@ -435,7 +448,8 @@ trans_ast_iftStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Non");
+        log_err("Unkown comparision. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
         panic();
         break;
     }
@@ -468,30 +482,30 @@ transform_ifteStmt(struct ast_stmt *stmt)
 
     case ast_NEQ:
         test->u.op.oper = ast_EQ;
-        return ast_new_ifte_stmt(test, elsee, then);
+        return ast_new_ifte_stmt(stmt->pos, test, elsee, then);
 
     case ast_GT:
-        stmt->u.ifte.test = ast_new_op_exp(ast_LT, right, left);
+        stmt->u.ifte.test = ast_new_op_exp(stmt->pos, ast_LT, right, left);
         return stmt;
 
     case ast_LEQ:
-        test1 = ast_new_op_exp(ast_LT, left, right);
-        test2 = ast_new_op_exp(ast_EQ, left, right);
-        return ast_new_ifte_stmt(test1, then, ast_new_stmt_list(ast_new_ifte_stmt(test2, then, elsee), NULL));
+        test1 = ast_new_op_exp(stmt->pos, ast_LT, left, right);
+        test2 = ast_new_op_exp(stmt->pos, ast_EQ, left, right);
+        return ast_new_ifte_stmt(stmt->pos, test1, then, ast_new_stmt_list(ast_new_ifte_stmt(stmt->pos, test2, then, elsee), NULL));
 
     case ast_GEQ:
-        stmt->u.ifte.test = ast_new_op_exp(ast_LEQ, right, left);
+        stmt->u.ifte.test = ast_new_op_exp(stmt->pos, ast_LEQ, right, left);
         return transform_ifteStmt(stmt);
 
     default:
+        log_err("Unkown comparision. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
         panic();
     }
     sentinel("Should not reach");
 error:
     return NULL;
 }
-
-
 
 static void
 trans_ast_ifteStmt(struct ast_stmt *stmt)
@@ -506,6 +520,8 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
 
     if (stmt->u.ifte.test->kind != ast_opExp ||
             stmt->u.ifte.test->u.op.oper < ast_EQ) {
+        log_err("Unkown comparision. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
         log_err("error");
         panic();
     }
@@ -518,7 +534,9 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Non");
+        log_err("Unkown comparision. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Not supported");
         panic();
     }
 
@@ -537,7 +555,9 @@ trans_ast_ifteStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Non");
+        log_err("Unkown comparision. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
+        log_err("Not supported");
         panic();
         break;
     }
@@ -564,6 +584,8 @@ trans_ast_whileStmt(struct ast_stmt *stmt)
 
     if (stmt->u.whilee.test->kind != ast_opExp ||
             stmt->u.whilee.test->u.op.oper < ast_EQ) {
+        log_err("Unkown comparision. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
         log_err("error");
         panic();
     }
@@ -578,7 +600,8 @@ trans_ast_whileStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Non");
+        log_err("Unkown comparision. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
         panic();
         break;
     }
@@ -598,7 +621,8 @@ trans_ast_whileStmt(struct ast_stmt *stmt)
         break;
 
     default:
-        log_err("Non");
+        log_err("Unkown comparision. Please report this to the author.");
+        lyyerror(stmt->pos, "Unkown comparision. Please report this to the author.");
         panic();
         break;
     }
@@ -622,6 +646,7 @@ trans_ast_returnStmt(struct ast_stmt *stmt)
     assert(stmt && stmt->kind == ast_returnStmt);
 
     if (!s_in_scope()) {
+        log_err("Return from the outmost scope");
         lyyerror(stmt->pos, "Return from the outmost scope");
         panic();
     }
@@ -639,12 +664,19 @@ trans_ast_callStmt(struct ast_stmt *stmt)
     struct env_entry *p = s_find(_fenv, stmt->u.call.func);
 
     if (!p) {
-        log_err("Cannot call undefined function");
+        log_err("Calling undefined function: %s.", s_name(stmt->u.call.func));
+        lyyerror(stmt->pos, "Calling undefined function: %s.", s_name(stmt->u.call.func));
         panic();
     }
 
     if (count_expList(stmt->u.call.args) != p->u.func.count_params) {
-        log_err("Mismatched number of parameters");
+        log_err("Mismatch number of parameters to %s. Expected:%d, Got: %d.",
+                s_name(stmt->u.call.func), p->u.func.count_params,
+                count_expList(stmt->u.call.args));
+        lyyerror(stmt->pos,
+                "Mismatch number of parameters to %s. Expected:%d, Got: %d.",
+                s_name(stmt->u.call.func), p->u.func.count_params,
+                count_expList(stmt->u.call.args));
         panic();
     }
 
@@ -690,7 +722,8 @@ trans_stmt(struct ast_stmt *stmt)
         (*trans_stmt_fun_list[stmt->kind])(stmt);
         free(stmt);
     } else {
-        log_err("Unkown");
+        lyyerror(stmt->pos, "Unkown statement type. "
+                            "Please report this to the author.");
         panic();
     }
 }
@@ -698,8 +731,7 @@ trans_stmt(struct ast_stmt *stmt)
 static void
 trans_exp_list(struct ast_exp_list *list)
 {
-    if (!list) {
-        log_info("exp_list returns");
+    if (list == NULL) {
         return;
     }
 
@@ -718,8 +750,9 @@ static void trans_var_exp(struct ast_exp *exp)
     assert(exp && exp->kind == ast_varExp);
     struct env_entry *p = s_find(_venv, exp->u.var);
 
-    if (!p) {
+    if (p == NULL) {
         log_err("Use of undefined varaible");
+        lyyerror(exp->pos, "Use of undefined varaible %s", s_name(exp->u.var));
         panic();
     }
 
@@ -733,7 +766,8 @@ static void trans_var_exp(struct ast_exp *exp)
         break;
 
     default:
-        log_err("Unkown parameters");
+        log_err("Unkown scope: %d", p->u.var.scope);
+        lyyerror(exp->pos, "Unkown scope: %d", p->u.var.scope);
         panic();
     }
 }
@@ -751,13 +785,20 @@ trans_call_exp(struct ast_exp *exp)
     assert(exp && exp->kind == ast_callExp);
     struct env_entry *p = s_find(_fenv, exp->u.call.func);
 
-    if (!p) {
-        log_err("Calling undefined function.");
+    if (p == NULL) {
+        log_err("Calling undefined function: %s.", s_name(exp->u.call.func));
+        lyyerror(exp->pos, "Calling undefined function: %s.", s_name(exp->u.call.func));
         panic();
     }
 
     if (count_expList(exp->u.call.args) != p->u.func.count_params) {
-        log_err("Mismatched number of parameters");
+        log_err("Mismatch number of parameters to %s. Expected:%d, Got: %d.",
+                s_name(exp->u.call.func), p->u.func.count_params,
+                count_expList(exp->u.call.args));
+        lyyerror(exp->pos,
+                "Mismatch number of parameters to %s. Expected:%d, Got: %d.",
+                s_name(exp->u.call.func), p->u.func.count_params,
+                count_expList(exp->u.call.args));
         panic();
     }
 
@@ -779,6 +820,7 @@ trans_call_exp(struct ast_exp *exp)
 
     gen_Pop(p->u.func.count_params);
     return;
+
 error:
     panic();
 }
@@ -808,7 +850,8 @@ trans_op_exp(struct ast_exp *exp)
         break;
 
     default:
-        log_err("Unkown parameter");
+        log_err("Unkown comparison %d", exp->u.op.oper);
+        lyyerror(exp->pos, "Unkown comparison %d", exp->u.op.oper);
         panic();
     }
 }
@@ -822,7 +865,8 @@ trans_exp(struct ast_exp *exp)
         (*trans_exp_fun_list[exp->kind])(exp);
         free(exp);
     } else {
-        log_err("Unkown type");
+        log_err("Unkown expression type %d. Please report this to the author.", exp->kind);
+        lyyerror(exp->pos, "Unkown expression type %d. Please report this to the author.", exp->kind);
         panic();
     }
 }

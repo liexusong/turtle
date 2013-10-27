@@ -48,11 +48,11 @@ error:
 }
 
 struct ast_var_dec *
-ast_new_var_dec(struct s_symbol *sym, struct ast_exp *init)
+ast_new_var_dec(YYLTYPE t, struct s_symbol *sym, struct ast_exp *init)
 {
     struct ast_var_dec *p = malloc(sizeof(*p));
     check_mem(p);
-    p->pos = yylloc;
+    p->pos = t;
     p->sym = sym;
     p->init = init;
     log_info("ast_var_dec(%s)\n", s_name(sym));
@@ -75,13 +75,13 @@ error:
 }
 
 struct ast_fun_dec *
-ast_new_fundec(struct s_symbol *name,
+ast_new_fundec(YYLTYPE t, struct s_symbol *name,
                struct ast_field_list *params, struct ast_var_dec_list *var,
                struct ast_stmt_list *body)
 {
     struct ast_fun_dec *p = malloc(sizeof(*p));
     check_mem(p);
-    p->pos = yylloc;
+    p->pos = t;
     p->name = name;
     p->params = params;
     p->var = var;
@@ -105,12 +105,12 @@ error:
 }
 
 struct ast_exp *
-ast_new_var_exp(struct s_symbol *var)
+ast_new_var_exp(YYLTYPE t, struct s_symbol *var)
 {
     struct ast_exp *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_varExp;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.var = var;
     return p;
 error:
@@ -118,12 +118,12 @@ error:
 }
 
 struct ast_exp *
-ast_int_exp(int i)
+ast_int_exp(YYLTYPE t, int i)
 {
     struct ast_exp *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_intExp;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.intt = i;
     return p;
 error:
@@ -131,13 +131,13 @@ error:
 }
 
 struct ast_exp *
-ast_new_call_exp(struct s_symbol *func,
+ast_new_call_exp(YYLTYPE t, struct s_symbol *func,
                  struct ast_exp_list *args)
 {
     struct ast_exp *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_callExp;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.call.func = func;
     p->u.call.args = args;
     return p;
@@ -146,13 +146,13 @@ error:
 }
 
 struct ast_exp *
-ast_new_op_exp(enum ast_oper oper, struct ast_exp *left,
+ast_new_op_exp(YYLTYPE t, enum ast_oper oper, struct ast_exp *left,
                struct ast_exp *right)
 {
     struct ast_exp *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_opExp;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.op.oper = oper;
     p->u.op.left = left;
     p->u.op.right = right;
@@ -161,26 +161,25 @@ error:
     return NULL;
 }
 
-
 struct ast_stmt *
-ast_new_up_stmt(void)
+ast_new_up_stmt(YYLTYPE t)
 {
     struct ast_stmt *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_upStmt;
-    p->pos = yylloc;
+    p->pos = t;
     return p;
 error:
     return NULL;
 }
 
 struct ast_stmt *
-ast_new_down_stmt(void)
+ast_new_down_stmt(YYLTYPE t)
 {
     struct ast_stmt *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_downStmt;
-    p->pos = yylloc;
+    p->pos = t;
     return p;
 error:
     return NULL;
@@ -188,12 +187,12 @@ error:
 
 
 struct ast_stmt *
-ast_new_move_stmt(struct ast_exp *exp1, struct ast_exp *exp2)
+ast_new_move_stmt(YYLTYPE t, struct ast_exp *exp1, struct ast_exp *exp2)
 {
     struct ast_stmt *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_moveStmt;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.move.exp1 = exp1;
     p->u.move.exp2 = exp2;
     return p;
@@ -202,12 +201,12 @@ error:
 }
 
 struct ast_stmt *
-ast_new_read_stmt(struct s_symbol *var)
+ast_new_read_stmt(YYLTYPE t, struct s_symbol *var)
 {
     struct ast_stmt *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_readStmt;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.read.var = var;
     return p;
 error:
@@ -215,12 +214,12 @@ error:
 }
 
 struct ast_stmt *
-ast_new_assign_stmt(struct s_symbol *var, struct ast_exp *exp)
+ast_new_assign_stmt(YYLTYPE t, struct s_symbol *var, struct ast_exp *exp)
 {
     struct ast_stmt *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_assignStmt;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.assign.var = var;
     p->u.assign.exp = exp;
     return p;
@@ -229,12 +228,12 @@ error:
 }
 
 struct ast_stmt *
-ast_new_ift_stmt(struct ast_exp *test, struct ast_stmt_list *then)
+ast_new_ift_stmt(YYLTYPE t, struct ast_exp *test, struct ast_stmt_list *then)
 {
     struct ast_stmt *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_iftStmt;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.ift.test = test;
     p->u.ift.then = then;
     return p;
@@ -243,13 +242,13 @@ error:
 }
 
 struct ast_stmt *
-ast_new_ifte_stmt(struct ast_exp *test, struct ast_stmt_list *then,
+ast_new_ifte_stmt(YYLTYPE t, struct ast_exp *test, struct ast_stmt_list *then,
                   struct ast_stmt_list *elsee)
 {
     struct ast_stmt *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_ifteStmt;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.ifte.test = test;
     p->u.ifte.then = then;
     p->u.ifte.elsee = elsee;
@@ -259,13 +258,13 @@ error:
 }
 
 struct ast_stmt *
-ast_new_while_stmt(struct ast_exp *test,
+ast_new_while_stmt(YYLTYPE t, struct ast_exp *test,
                    struct ast_stmt_list *body)
 {
     struct ast_stmt *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_whileStmt;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.whilee.test = test;
     p->u.whilee.body = body;
     return p;
@@ -274,12 +273,12 @@ error:
 }
 
 struct ast_stmt *
-ast_new_return_stmt(struct ast_exp *exp)
+ast_new_return_stmt(YYLTYPE t, struct ast_exp *exp)
 {
     struct ast_stmt *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_returnStmt;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.returnn.exp = exp;
     return p;
 error:
@@ -287,13 +286,13 @@ error:
 }
 
 struct ast_stmt *
-ast_new_call_stmt(struct s_symbol *func,
+ast_new_call_stmt(YYLTYPE t, struct s_symbol *func,
                   struct ast_exp_list *args)
 {
     struct ast_stmt *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_callStmt;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.call.func = func;
     p->u.call.args = args;
     return p;
@@ -302,12 +301,12 @@ error:
 }
 
 struct ast_stmt *
-ast_new_exp_list_stmt(struct ast_exp_list *list)
+ast_new_exp_list_stmt(YYLTYPE t, struct ast_exp_list *list)
 {
     struct ast_stmt *p = malloc(sizeof(*p));
     check_mem(p);
     p->kind = ast_exp_listStmt;
-    p->pos = yylloc;
+    p->pos = t;
     p->u.seq = list;
     return p;
 error:
@@ -339,11 +338,11 @@ error:
 }
 
 struct ast_field *
-ast_new_field(struct s_symbol *name)
+ast_new_field(YYLTYPE t, struct s_symbol *name)
 {
     struct ast_field *p = malloc(sizeof(*p));
     check_mem(p);
-    p->pos = yylloc;
+    p->pos = t;
     p->name = name;
     return p;
 error:
