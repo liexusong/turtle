@@ -1,3 +1,5 @@
+// Siyuan Zhang, u4761413
+// Meitian Huang, u4700480
 turtle test5
 
 var x = 0

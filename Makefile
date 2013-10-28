@@ -21,7 +21,7 @@ lexer.c: lexer.l
 	flex lexer.l
 
 parser.c: parser.y
-	bison -d parser.y
+	-bison -d parser.y
 
 .c.o:
 	$(CC) $(CFLAGS) $(CLFAGS_WARNING) $< -c -o $@
